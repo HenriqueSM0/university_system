@@ -5,8 +5,8 @@ def _create_table_curso (cursor: sqlite3.Cursor) :
         '''CREATE TABLE IF NOT EXISTS curso (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome TEXT NOT NULL,
-            CONSTRAINT unique_nome UNIQUE (nome),
             id_inst INTEGER NOT NULL,
+            CONSTRAINT unique_nome UNIQUE (nome),
             FOREIGN KEY (id_inst) REFERENCES instituto(id) ON DELETE CASCADE ON UPDATE CASCADE
         )'''
     )

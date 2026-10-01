@@ -99,10 +99,11 @@ class Horario :
         self.formated_hor = formated_hor
         self.ch = carga_horaria
 
-    def conflitant (self, *horarios : str) :
+    @staticmethod
+    def conflitant (*horarios : str) :
         matrix = [[0] * 16 for _ in range(7)]
         for horario in horarios :
-            data = horario.split(' ')
+            data = [p for p in horario.split(' ') if p.strip()]
             for part in data :
                 if 'M' in part :
                     cipher = -1

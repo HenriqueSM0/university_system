@@ -31,7 +31,7 @@ def create_aluno_turma (cursor: sqlite3.Cursor, id_aluno: int, id_turma: int) :
         cursor.execute('SELECT nome FROM materia WHERE id = ?', (id_mat,))
         nome_mat = cursor.fetchone()[0]
         cursor.execute(
-            'SELECT status, sem FROM aluno_turma JOIN turma ON id_turma = id WHERE id_aluno = ? AND id_mat = ?', 
+            'SELECT aluno_turma.status, turma.sem FROM aluno_turma JOIN turma ON aluno_turma.id_turma = turma.id WHERE aluno_turma.id_aluno = ? AND turma.id_mat = ?', 
             (id_aluno, id_mat)
             )
         row = cursor.fetchone()
@@ -54,8 +54,9 @@ def create_aluno_turma (cursor: sqlite3.Cursor, id_aluno: int, id_turma: int) :
             for row in rows:
                 if row[2] is None or row[2] == 'reproved' or (row[1] == 'pre' and row[2] == 'in_progress') :
                     return_str += f'{nome_mat} {row[1]}-requires {row[0]}\n'
-            return_str = return_str.removesuffix('\n')
-            return False, return_str 
+            if return_str:
+                return_str = return_str.removesuffix('\n')
+                return False, return_str 
         cursor.execute('SELECT COUNT(*) FROM aluno_turma WHERE id_turma = ?', (id_turma,))
         vagas_disp = cursor.fetchone()[0]
         if n_vagas_turma - vagas_disp == 0 :

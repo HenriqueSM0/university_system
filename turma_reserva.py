@@ -36,10 +36,10 @@ def create_turma_reseva (cursor: sqlite3.Cursor, id_turma: int, id_cur: int, n_v
         if not row:
             return False, f"Curso with ID {id_cur} does not exist"
         else : 
-            nome_cur = row[1]
+            nome_cur = row[0]
         cursor.execute('''
-            INSERT INTO turma_reserva (id_turma, id_cur, sem, n_vagas) 
-            VALUES (?, ?, ?, ?)
+            INSERT INTO turma_reserva (id_turma, id_cur, n_vagas) 
+            VALUES (?, ?, ?)
             ''', (id_turma, id_cur, n_vagas))
         return True, f"turma_reserva '{nome_cur} - {id_turma} - {nome_mat} - {n_vagas}' created with ID {cursor.lastrowid}"
     except sqlite3.IntegrityError as e:

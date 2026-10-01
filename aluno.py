@@ -6,10 +6,10 @@ def _create_table_aluno (cursor: sqlite3.Cursor) :
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome TEXT NOT NULL,
             cpf CHAR(11) NOT NULL,
-            CONSTRAINT unique_cpf UNIQUE (cpf),
             id_cur INTEGER NOT NULL,
-            sem_ing TEXT NOT NULL
-            FOREIGN KEY (id_cur) REFERENCES cur(id) ON DELETE CASCADE ON UPDATE CASCADE,
+            sem_ing TEXT NOT NULL,
+            CONSTRAINT unique_cpf UNIQUE (cpf),
+            FOREIGN KEY (id_cur) REFERENCES curso(id) ON DELETE CASCADE ON UPDATE CASCADE
         )'''
     )
 
@@ -40,7 +40,7 @@ def create_aluno (cursor: sqlite3.Cursor, name: str, cpf: str, id_cur: int, sem_
 def id_aluno (cursor: sqlite3.Cursor, cpf: str) :
     if len(cpf) != 11 : 
         return None
-    cursor.execute('''SELECT id FROM aluno WHERE cpf = ?''', (cpf))
+    cursor.execute('''SELECT id FROM aluno WHERE cpf = ?''', (cpf,))
     result = cursor.fetchone()  
     try: 
         if result: return result[0] 

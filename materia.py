@@ -5,15 +5,15 @@ def _create_table_materia (cursor: sqlite3.Cursor) :
         '''CREATE TABLE IF NOT EXISTS materia (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome TEXT NOT NULL,
-            CONSTRAINT unique_nome UNIQUE (nome),
             id_inst INTEGER NOT NULL,
             carga_hor INTEGER NOT NULL,
-            FOREIGN KEY (id_inst) REFERENCES instituto(id) ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT unique_nome UNIQUE (nome),
+            FOREIGN KEY (id_inst) REFERENCES instituto(id) ON DELETE CASCADE ON UPDATE CASCADE
         )'''
     )
 
 def create_materia (cursor: sqlite3.Cursor, name: str, id_inst: int, carga_hor: int) :
-    if carga_hor % 16 != 0 and 16 <= carga_hor <= 1792 :
+    if carga_hor % 16 == 0 and 16 <= carga_hor <= 1792 :
         try:
             cursor.execute('SELECT id, nome FROM instituto WHERE id = ?', (id_inst,))
             inst = cursor.fetchone()
@@ -36,7 +36,7 @@ def create_materia (cursor: sqlite3.Cursor, name: str, id_inst: int, carga_hor: 
         return False, f'Invalid number of hours' 
 
 def id_materia (cursor: sqlite3.Cursor, nome: str) :
-    cursor.execute('''SELECT id FROM materia WHERE nome = ?''', (nome))
+    cursor.execute('''SELECT id FROM materia WHERE nome = ?''', (nome,))
     result = cursor.fetchone()  
     try: 
         if result: return result[0] 
