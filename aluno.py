@@ -49,11 +49,11 @@ def id_aluno (cursor: sqlite3.Cursor, cpf: str) :
     except sqlite3.Error as e:
         return None, f"Database error: {e}"
 
-def periodo_aluno (cursor: sqlite3.Cursor, method: str, param: str) :
-    if method == 'id' :
+def periodo_aluno (cursor: sqlite3.Cursor, id: int = None, cpf: str = None) :
+    if id is not None :
         try :
-            id_aluno = int(param)
-        except :
+            id_aluno = int(id)
+        except (ValueError, TypeError) :
             return -1, 'Invalid id'
         cursor.execute('''SELECT nome, cpf, sem_ing FROM aluno WHERE id = ?''', (id_aluno,))
         row = cursor.fetchone()
@@ -61,22 +61,21 @@ def periodo_aluno (cursor: sqlite3.Cursor, method: str, param: str) :
             return -1, f"Aluno com ID {id_aluno} não encontrado"
         cpf = row[1]
         sem_ing = row[2]
-    elif method == 'cpf' :
-        cursor.execute('''SELECT nome, sem_ing FROM aluno WHERE cpf = ?''', (param,))
+    elif cpf is not None :
+        cursor.execute('''SELECT nome, sem_ing FROM aluno WHERE cpf = ?''', (cpf,))
         row = cursor.fetchone()
         if not row:
-            return -1, f"Aluno com cpf {param} não encontrado"
+            return -1, f"Aluno com cpf {cpf} não encontrado"
         sem_ing = row[1]
-        cpf = param
     else :
-        return 0, 'Method must be id or cpf!'
+        return 0, 'Either id or cpf must be provided!'
     nome_aluno = row[0]
     periodo = df.time_between_semesters(df.get_current_semester(), sem_ing) * 2 + 1
     return periodo, f'O aluno {nome_aluno} - {cpf} esta no periodo {periodo}' 
 
 def delete_aluno (cursor: sqlite3.Cursor, cpf: str) :
     if len(cpf) != 11 : 
-            return False
+        return False
     cursor.execute('SELECT nome FROM aluno WHERE cpf = ?', (cpf,))
     row = cursor.fetchone()
     if not row:

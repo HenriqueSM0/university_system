@@ -27,13 +27,19 @@ def create_instituto (cursor: sqlite3.Cursor, name: str, sigla: str) :
     except sqlite3.Error as e:
         return False, f"Database error: {e}"
 
-def id_instituto (cursor: sqlite3.Cursor, method: str, param: str) :
-    if method == 'nome' :
-        cursor.execute('''SELECT id FROM instituto WHERE nome = ?''', (param,))
-    elif method == 'sigla' :
-        cursor.execute('''SELECT id FROM instituto WHERE sigla = ?''', (param,))
+def id_instituto (cursor: sqlite3.Cursor, id: int = None, nome: str = None, sigla: str = None) :
+    if id is not None :
+        try :
+            id_inst = int(id)
+        except (ValueError, TypeError) :
+            return None, 'Invalid id'
+        cursor.execute('''SELECT id FROM instituto WHERE id = ?''', (id_inst,))
+    elif nome is not None :
+        cursor.execute('''SELECT id FROM instituto WHERE nome = ?''', (nome,))
+    elif sigla is not None :
+        cursor.execute('''SELECT id FROM instituto WHERE sigla = ?''', (sigla,))
     else : 
-        return None, 'Param must be nome or sigla!'
+        return None, 'Either id, nome or sigla must be provided!'
     result = cursor.fetchone()  
     try: 
         if result: return result[0] 
@@ -41,36 +47,36 @@ def id_instituto (cursor: sqlite3.Cursor, method: str, param: str) :
     except sqlite3.Error as e:
        return None, f"Database error: {e}"
 
-def delete_instituto (cursor: sqlite3.Cursor, method: str, param: str) :
-    if method == 'id' :
+def delete_instituto (cursor: sqlite3.Cursor, id: int = None, nome: str = None, sigla: str = None) :
+    if id is not None :
         try :
-            id_inst = int(param)
-        except :
+            id_inst = int(id)
+        except (ValueError, TypeError) :
             return False, 'Invalid id'
-        cursor.execute('''SELECT nome, sigla FROM instituto WHERE nome = ?''', (id_inst,))
+        cursor.execute('''SELECT nome, sigla FROM instituto WHERE id = ?''', (id_inst,))
         row = cursor.fetchone()
         if not row : 
             return False, f"Instituto com ID {id_inst} não encontrado"
         sigla_inst = row[1]
         nome_inst = row[0]
-    elif method == 'nome' :
-        cursor.execute('''SELECT id, sigla FROM instituto WHERE nome = ?''', (param,))
+    elif nome is not None :
+        cursor.execute('''SELECT id, sigla FROM instituto WHERE nome = ?''', (nome,))
         row = cursor.fetchone()
         if not row : 
-            return False, f"Instituto com nome {param} não encontrado"
+            return False, f"Instituto com nome {nome} não encontrado"
         id_inst = row[0]
         sigla_inst = row[1]
-        nome_inst = param
-    elif method == 'sigla' :
-        cursor.execute('''SELECT id, nome FROM instituto WHERE sigla = ?''', (param,))
+        nome_inst = nome
+    elif sigla is not None :
+        cursor.execute('''SELECT id, nome FROM instituto WHERE sigla = ?''', (sigla,))
         row = cursor.fetchone()
         if not row : 
-            return False, f"Instituto com sigla {param} não encontrado"
+            return False, f"Instituto com sigla {sigla} não encontrado"
         id_inst = row[0]
-        sigla_inst = param
+        sigla_inst = sigla
         nome_inst = row[1]
     else : 
-        return None, 'Param must be nome or sigla!'
+        return False, 'Either id, nome or sigla must be provided!'
     try: 
         cursor.execute('DELETE FROM instituto WHERE id = ?', (id_inst,))
         return True, f"Instituto '{nome_inst} - {sigla_inst}' deletado com sucesso"

@@ -44,27 +44,28 @@ def id_materia (cursor: sqlite3.Cursor, nome: str) :
     except sqlite3.Error as e:
         return None, f"Database error: {e}"
 
-def delete_materia (cursor: sqlite3.Cursor, method: str, param: str) :
-    if method == 'id' :
+def delete_materia (cursor: sqlite3.Cursor, id: int = None, nome: str = None) :
+    if id is not None :
         try :
-            id_mat = int(param)
-        except :
+            id_mat = int(id)
+        except (ValueError, TypeError) :
             return False, 'Invalid id'
-        cursor.execute('''SELECT nome, id_inst FROM materia WHERE nome = ?''', (id_mat,))
+        cursor.execute('''SELECT nome, id_inst FROM materia WHERE id = ?''', (id_mat,))
         row = cursor.fetchone()
         if not row : 
             return False, f"Materia com ID {id_mat} não encontrada"
         id_inst = row[1]
         nome_mat = row[0]
-    elif method == 'nome' :
-        cursor.execute('''SELECT id, id_inst FROM materia WHERE nome = ?''', (param,))
+    elif nome is not None :
+        cursor.execute('''SELECT id, id_inst FROM materia WHERE nome = ?''', (nome,))
         row = cursor.fetchone()
         if not row : 
-            return False, f"materia com nome {param} não encontrado"
+            return False, f"materia com nome {nome} não encontrado"
         id_inst = row[1]
-        nome_mat = param
+        nome_mat = nome
+        id_mat = row[0]
     else : 
-        return None, 'Param must be nome or sigla!'
+        return False, 'Either id or nome must be provided!'
     try: 
         cursor.execute('''SELECT sigla FROM instituto WHERE id = ?''', (id_inst,))
         sigla_inst = cursor.fetchone()[0]

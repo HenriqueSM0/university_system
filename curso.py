@@ -37,26 +37,26 @@ def id_curso (cursor: sqlite3.Cursor, nome: str) :
     except sqlite3.Error as e:
         return None, f"Database error: {e}"
 
-def get_min_periods (cursor: sqlite3.Cursor, method: str, param: str) :
-    if method == 'id' :
+def get_min_periods (cursor: sqlite3.Cursor, id: int = None, name: str = None) :
+    if id is not None :
         try :
-            id_curso = int(param)
-        except :
+            id_curso = int(id)
+        except (ValueError, TypeError) :
             return -1, 'Invalid id'
         cursor.execute('''SELECT nome FROM curso WHERE id = ?''', (id_curso,))
         row = cursor.fetchone()
         if not row:
             return -1, f"Curso com ID {id_curso} não encontrado"
         nome_curso = row[0]
-    elif method == 'name' :
-        cursor.execute('''SELECT id FROM curso WHERE nome = ?''', (param,))
+    elif name is not None :
+        cursor.execute('''SELECT id FROM curso WHERE nome = ?''', (name,))
         row = cursor.fetchone()
         if not row:
-            return -1, f"Curso com nome {param} não encontrado"
-        nome_curso = param
+            return -1, f"Curso com nome {name} não encontrado"
+        nome_curso = name
         id_curso = row[0]
     else :
-        return -2, 'Method must be nome_mat or id_mat!'
+        return -2, 'Either id or name must be provided!'
     try:
         cursor.execute('SELECT COALESCE(MAX(periodo_fluxo), 0) FROM mat_curso WHERE id_cur = ?', (id_curso,))
         min_anos = int(cursor.fetchone()[0])
@@ -66,26 +66,26 @@ def get_min_periods (cursor: sqlite3.Cursor, method: str, param: str) :
     except sqlite3.Error as e:
             return -2, f"Database error: {e}"
     
-def delete_curso (cursor: sqlite3.Cursor, method: str, param: str) :
-    if method == 'id' :
+def delete_curso (cursor: sqlite3.Cursor, id: int = None, name: str = None) :
+    if id is not None :
         try :
-            id_curso = int(param)
-        except :
+            id_curso = int(id)
+        except (ValueError, TypeError) :
             return False, 'Invalid id'
         cursor.execute('''SELECT nome FROM curso WHERE id = ?''', (id_curso,))
         row = cursor.fetchone()
         if not row:
             return False, f"Curso com ID {id_curso} não encontrado"
         nome_curso = row[0]
-    elif method == 'name' :
-        cursor.execute('''SELECT id FROM curso WHERE nome = ?''', (param,))
+    elif name is not None :
+        cursor.execute('''SELECT id FROM curso WHERE nome = ?''', (name,))
         row = cursor.fetchone()
         if not row:
-            return False, f"Curso com nome {param} não encontrado"
-        nome_curso = param
+            return False, f"Curso com nome {name} não encontrado"
+        nome_curso = name
         id_curso = row[0]
     else :
-        return None, 'Param must be nome_mat or id_mat!'
+        return False, 'Either id or name must be provided!'
     try:
         cursor.execute('DELETE FROM curso WHERE id = ?', (id_curso,))
         return True, f"Curso '{nome_curso}' deletado com sucesso"

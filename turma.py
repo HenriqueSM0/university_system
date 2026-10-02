@@ -60,21 +60,22 @@ def create_turma (cursor: sqlite3.Cursor, id_prof: int, local: str, id_mat: int,
     except sqlite3.Error as e:
         return False, f"Database error: {e}" 
 
-def id_turma (cursor: sqlite3.Cursor, method: str, param: str, id_prof: int, hor: str) :
-    if method == 'id_mat' :
+def id_turma (cursor: sqlite3.Cursor, id_mat: int = None, mat_name: str = None, id_prof: int = None, hor: str = None) :
+    if id_mat is not None :
         try :
-            id_mat = int(param)
-        except :
+            id_mat_final = int(id_mat)
+        except (ValueError, TypeError) :
             return False, 'Invalid id'
-    elif method == 'mat_name' :
-        id_mat = materia.id_materia(cursor, param)
+    elif mat_name is not None :
+        id_mat_final = materia.id_materia(cursor, mat_name)
     else :
-        return None, 'Param must be nome_mat or id_mat!'
-    if id_mat :
-        cursor.execute('SELECT id FROM turma WHERE id_mat = ? AND id_prof = ? AND hor = ?', (id_mat, id_prof, hor))
+        return None, 'Either id_mat or mat_name must be provided!'
+    if id_mat_final :
+        cursor.execute('SELECT id FROM turma WHERE id_mat = ? AND id_prof = ? AND hor = ?', (id_mat_final, id_prof, hor))
         result = cursor.fetchone()  
         try: 
             if result: return result[0] 
             return 0      
         except sqlite3.Error as e:
-            return False, f"Database error: {e}"          
+            return False, f"Database error: {e}"
+    return 0          
