@@ -56,7 +56,7 @@ def get_min_periods (cursor: sqlite3.Cursor, method: str, param: str) :
         nome_curso = param
         id_curso = row[0]
     else :
-        return -2, 'Param must be nome_mat or id_mat!'
+        return -2, 'Method must be nome_mat or id_mat!'
     try:
         cursor.execute('SELECT COALESCE(MAX(periodo_fluxo), 0) FROM mat_curso WHERE id_cur = ?', (id_curso,))
         min_anos = int(cursor.fetchone()[0])
