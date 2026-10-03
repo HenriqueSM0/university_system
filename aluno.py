@@ -115,6 +115,35 @@ def media_geral (cursor: sqlite3.Cursor, id: int = None, cpf: str = None) :
     mg = sum_gr / sum_ch
     return mg, f'O aluno {nome_aluno} - {cpf} tem média geral M = {mg}'
 
+def taxa_aprovacao (cursor: sqlite3.Cursor, id: int = None, cpf: str = None) :
+    if id is not None :
+        try :
+            id_aluno = int(id)
+        except (ValueError, TypeError) :
+            return -1, 'Invalid id'
+        cursor.execute('''SELECT nome, cpf FROM aluno WHERE id = ?''', (id_aluno,))
+        row = cursor.fetchone()
+        if not row:
+            return -1, f"Aluno com ID {id_aluno} não encontrado"
+        cpf = row[1]
+    elif cpf is not None :
+        cursor.execute('''SELECT nome, id FROM aluno WHERE cpf = ?''', (cpf,))
+        row = cursor.fetchone()
+        if not row:
+            return -1, f"Aluno com cpf {cpf} não encontrado"
+        id_aluno = row[1]
+    else :
+        return 0, 'Either id or cpf must be provided!'
+    nome_aluno = row[0]
+    cursor.execute('''SELECT COUNT(*) FROM aluno_turma WHERE id_aluno = ? AND status = 'approved' ''', (id_aluno,))
+    n_apr = cursor.fetchone()[0]
+    cursor.execute('''SELECT COUNT(*) FROM aluno_turma WHERE id_aluno = ? AND status != 'cursing' ''', (id_aluno,))
+    n_total = cursor.fetchone()[0]
+    if n_total == 0 :
+        return -1, f'O aluno {nome_aluno} - {cpf} nao finalizou disciplinas ainda'
+    tx_apr = n_apr / n_total
+    return tx_apr, f'{nome_aluno} - {cpf} tem taxa de aprovação de {tx_apr}' 
+
 def delete_aluno (cursor: sqlite3.Cursor, cpf: str) :
     if len(cpf) != 11 : 
         return False
