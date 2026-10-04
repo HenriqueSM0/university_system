@@ -29,6 +29,11 @@ def create_matricula_request (cursor: sqlite3.Cursor, id_aluno: int, id_turma: i
         if not row:
             return False, f"Turma with ID {id_turma} does not exist"
         id_mat = row[0]
+        cursor.execute('''SELECT 1 FROM matricula JOIN (turma ON id_turma = turma.id) 
+            WHERE id_aluno = ? AND id_mat = ? AND status = 'requested' ''', (id_aluno, id_mat,))
+        row = cursor.fetchone()
+        if row :
+            return False, f'Aluno {nome_aluno} - {cpf_aluno} is already requesting for materia {id_mat} on turma {id_turma}'
         if mat_period :
             cursor.execute('''SELECT id_cur FROM turma_reserva WHERE id_turma = ?''', (id_turma,))
             rows = cursor.fetchall()
