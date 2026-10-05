@@ -137,7 +137,7 @@ def taxa_aprovacao (cursor: sqlite3.Cursor, id: int = None, cpf: str = None) :
     nome_aluno = row[0]
     cursor.execute('''SELECT COUNT(*) FROM aluno_turma WHERE id_aluno = ? AND status = 'approved' ''', (id_aluno,))
     n_apr = cursor.fetchone()[0]
-    cursor.execute('''SELECT COUNT(*) FROM aluno_turma WHERE id_aluno = ? AND status != 'cursing' ''', (id_aluno,))
+    cursor.execute('''SELECT COUNT(*) FROM aluno_turma WHERE id_aluno = ? AND status != 'in_progress' ''', (id_aluno,))
     n_total = cursor.fetchone()[0]
     if n_total == 0 :
         return -1, f'O aluno {nome_aluno} - {cpf} nao finalizou disciplinas ainda'
