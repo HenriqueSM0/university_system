@@ -11,7 +11,7 @@ def _create_table_matricula (cursor: sqlite3.Cursor) :
             status TEXT,
             FOREIGN KEY (id_turma_reserva) REFERENCES turma_reserva(id) ON DELETE CASCADE ON UPDATE CASCADE,
             FOREIGN KEY (id_aluno) REFERENCES aluno(id) ON DELETE CASCADE ON UPDATE CASCADE,
-            CONSTRAINT unique_matricula UNIQUE (id_turma, id_aluno)
+            CONSTRAINT unique_matricula UNIQUE (id_turma, id_aluno, status)
         )'''
     )
 
@@ -95,7 +95,7 @@ def create_matricula_request (cursor: sqlite3.Cursor, id_aluno: int, id_turma: i
         return True, f'Requisição de matricula {nome_aluno} - {cpf_aluno} na turma {id_turma} criada com {cursor.lastrowid}'
     except sqlite3.IntegrityError as e:
         if "unique_matricula" in str(e):
-            return False, f"request '{nome_aluno} - {cpf_aluno} -  {id_turma}' already exists"
+            return False, f"request '{nome_aluno} - {cpf_aluno} - {id_turma} - requested' already exists"
         return False, f"Database constraint error: {e}"
     except sqlite3.Error as e:
         return False, f"Database error: {e}"
