@@ -10,7 +10,7 @@ def _create_table_matricula (cursor: sqlite3.Cursor) :
             id_turma INTEGER NOT NULL,
             priority FLOAT,
             status TEXT,
-            FOREIGN KEY (id_turma_reserva) REFERENCES turma_reserva(id) ON DELETE CASCADE ON UPDATE CASCADE,
+            FOREIGN KEY (id_turma) REFERENCES turma(id) ON DELETE CASCADE ON UPDATE CASCADE,
             FOREIGN KEY (id_aluno) REFERENCES aluno(id) ON DELETE CASCADE ON UPDATE CASCADE,
             CONSTRAINT unique_matricula UNIQUE (id_turma, id_aluno, status)
         )'''
@@ -34,7 +34,7 @@ def create_matricula_request (cursor: sqlite3.Cursor, id_aluno: int, id_turma: i
         current_sem = date_funcs.get_current_semester() 
         if current_sem != sem :
             return False, f'Nao e possivel solicitar matricula na turma "{id_turma}" de {sem} para {current_sem}'
-        cursor.execute('''SELECT 1 FROM matricula JOIN (turma ON id_turma = turma.id) 
+        cursor.execute('''SELECT 1 FROM matricula JOIN turma ON id_turma = turma.id 
             WHERE id_aluno = ? AND id_mat = ? AND status = 'requested' ''', (id_aluno, id_mat,))
         row = cursor.fetchone()
         if row :
@@ -100,5 +100,40 @@ def create_matricula_request (cursor: sqlite3.Cursor, id_aluno: int, id_turma: i
         if "unique_matricula" in str(e):
             return False, f"request '{nome_aluno} - {cpf_aluno} - {id_turma} - requested' already exists"
         return False, f"Database constraint error: {e}"
+    except sqlite3.Error as e:
+        return False, f"Database error: {e}"
+
+def delete_matricula_request (cursor: sqlite3.Cursor, id: int = None, id_aluno: int = None, id_turma: int = None) :
+    if id is not None :
+        try :
+            id_mat = int(id)
+        except (ValueError, TypeError) :
+            return False, 'Invalid id'
+        cursor.execute('''SELECT m.id, a.nome, a.cpf, m.id_turma FROM matricula m
+            JOIN aluno a ON m.id_aluno = a.id
+            WHERE m.id = ? AND m.status = 'requested' ''', (id_mat,))
+        row = cursor.fetchone()
+        if not row :
+            return False, f"Requisição de matricula com ID {id_mat} não encontrada"
+        id_req = row[0]
+        nome_aluno = row[1]
+        cpf_aluno = row[2]
+        id_turma_req = row[3]
+    elif id_aluno is not None and id_turma is not None :
+        cursor.execute('''SELECT m.id, a.nome, a.cpf FROM matricula m
+            JOIN aluno a ON m.id_aluno = a.id
+            WHERE m.id_aluno = ? AND m.id_turma = ? AND m.status = 'requested' ''', (id_aluno, id_turma,))
+        row = cursor.fetchone()
+        if not row :
+            return False, f"Requisição de matricula para aluno {id_aluno} na turma {id_turma} não encontrada"
+        id_req = row[0]
+        nome_aluno = row[1]
+        cpf_aluno = row[2]
+        id_turma_req = id_turma
+    else :
+        return False, 'Either id or (id_aluno + id_turma) must be provided!'
+    try :
+        cursor.execute('DELETE FROM matricula WHERE id = ?', (id_req,))
+        return True, f"Requisição de matricula '{nome_aluno} - {cpf_aluno} - turma {id_turma_req}' deletada com sucesso"
     except sqlite3.Error as e:
         return False, f"Database error: {e}"
