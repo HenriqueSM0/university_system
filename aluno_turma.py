@@ -18,7 +18,7 @@ def fill_turmas (cursor: sqlite3.Cursor, mat_period: bool) :
     try:
         return_str = ''
         if mat_period :
-            cursor.execute('''SELECT n_vagas, id_cur, id_turma FROM 
+            cursor.execute('''SELECT turma_reserva.n_vagas, id_cur, id_turma FROM 
                 turma JOIN turma_reserva ON id_turma = turma.id ''')
             rows = cursor.fetchall()
             for row in rows:
@@ -70,6 +70,7 @@ def fill_turmas (cursor: sqlite3.Cursor, mat_period: bool) :
                     if "unique_aluno_turma" in str(e):
                         return False, f"Aluno {alunos[i][2]} ({alunos[i][1]}) já está na turma {id_turma}"
                     return False, f"Database constraint error: {e}"
+        return True, return_str
     except sqlite3.Error as e:
         return False, f"Database error: {e}"
 
