@@ -36,9 +36,9 @@ def create_materia (cursor: sqlite3.Cursor, name: str, id_inst: int, carga_hor: 
         return False, f'Invalid number of hours' 
 
 def id_materia (cursor: sqlite3.Cursor, nome: str) :
-    cursor.execute('''SELECT id FROM materia WHERE nome = ?''', (nome,))
-    result = cursor.fetchone()  
     try: 
+        cursor.execute('''SELECT id FROM materia WHERE nome = ?''', (nome,))
+        result = cursor.fetchone()  
         if result: return result[0] 
         return 0      
     except sqlite3.Error as e:

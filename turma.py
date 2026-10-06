@@ -71,9 +71,9 @@ def id_turma (cursor: sqlite3.Cursor, id_mat: int = None, mat_name: str = None, 
     else :
         return None, 'Either id_mat or mat_name must be provided!'
     if id_mat_final :
-        cursor.execute('SELECT id FROM turma WHERE id_mat = ? AND id_prof = ? AND hor = ?', (id_mat_final, id_prof, hor))
-        result = cursor.fetchone()  
         try: 
+            cursor.execute('SELECT id FROM turma WHERE id_mat = ? AND id_prof = ? AND hor = ?', (id_mat_final, id_prof, hor,))
+            result = cursor.fetchone()  
             if result: return result[0] 
             return 0      
         except sqlite3.Error as e:

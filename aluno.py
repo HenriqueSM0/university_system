@@ -42,9 +42,9 @@ def create_aluno (cursor: sqlite3.Cursor, name: str, cpf: str, id_cur: int, sem_
 def id_aluno (cursor: sqlite3.Cursor, cpf: str) :
     if len(cpf) != 11 : 
         return None
-    cursor.execute('''SELECT id FROM aluno WHERE cpf = ?''', (cpf,))
-    result = cursor.fetchone()  
-    try: 
+    try:
+        cursor.execute('''SELECT id FROM aluno WHERE cpf = ?''', (cpf,))
+        result = cursor.fetchone()  
         if result: return result[0] 
         return 0      
     except sqlite3.Error as e:
