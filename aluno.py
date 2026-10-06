@@ -95,8 +95,8 @@ def media_geral (cursor: sqlite3.Cursor, id: int = None, cpf: str = None) :
         return 0, 'Either id or cpf must be provided!'
     nome_aluno = row[0]
     cursor.execute('''
-        SELECT notas, carga_horaria FROM (aluno_turma JOIN turma ON id_turma = turma.id) 
-        JOIN (materia ON id_mat = materia.id)
+        SELECT notas, carga_hor FROM (aluno_turma JOIN turma ON id_turma = turma.id) 
+        JOIN materia ON id_mat = materia.id
         WHERE id_aluno = ?''', (id_aluno,))
     sum_gr = 0
     sum_ch = 0
