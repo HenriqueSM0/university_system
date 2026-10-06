@@ -1,4 +1,6 @@
 import sqlite3
+import os
+
 import instituto
 import curso
 import materia
@@ -9,160 +11,201 @@ import mat_reqs
 import turma
 import turma_reserva
 import aluno_turma
+import matricula
+import date_funcs
 
-"""
-=============================================================================
-ARVORE DE TABELAS (TREE OF TABLES) POR DEPENDÊNCIA DE CHAVES ESTRANGEIRAS
-=============================================================================
+DB_PATH = 'university.db'
 
-Nível 0 (Raiz - sem dependências):
-  └── instituto
+# ── helpers ────────────────────────────────────────────────────────────────────
 
-Nível 1 (Depende de Nível 0):
-  ├── curso           (FK: id_inst -> instituto.id)
-  ├── materia         (FK: id_inst -> instituto.id)
-  └── professor       (FK: id_inst -> instituto.id)
+def check(label: str, result):
+    """Print the result of every function call."""
+    ok, msg = result if isinstance(result, tuple) else (result, '')
+    status = '✓' if ok else '✗'
+    print(f'  [{status}] {label}: {msg}')
+    return ok
 
-Nível 2 (Depende de Nível 1):
-  ├── aluno           (FK: id_cur -> curso.id)
-  ├── mat_curso       (FK: id_mat -> materia.id, id_cur -> curso.id)
-  ├── mat_reqs        (FK: id_mat_reqstt -> materia.id, id_mat_reqsid -> materia.id)
-  └── turma           (FK: id_mat -> materia.id, id_prof -> professor.id)
-
-Nível 3 (Depende de Nível 2):
-  ├── turma_reserva   (FK: id_turma -> turma.id, id_cur -> curso.id)
-  └── aluno_turma     (FK: id_aluno -> aluno.id, id_turma -> turma.id)
-=============================================================================
-"""
+# ── table creation (dependency order) ─────────────────────────────────────────
 
 def create_all_tables(cursor: sqlite3.Cursor):
-    print("=" * 60)
-    print("1. CRIANDO AS TABELAS NA ORDEM DA ÁRVORE DE DEPENDÊNCIAS")
-    print("=" * 60)
-    
-    # Nível 0
+    print('\n=== Creating tables ===')
+    # Level 1
     instituto._create_table_instituto(cursor)
-    print("  [OK] Tabela 'instituto' criada")
-
-    # Nível 1
+    print('  [✓] instituto')
+    # Level 2
     curso._create_table_curso(cursor)
-    print("  [OK] Tabela 'curso' criada (depende de instituto)")
-
+    print('  [✓] curso')
     materia._create_table_materia(cursor)
-    print("  [OK] Tabela 'materia' criada (depende de instituto)")
-
+    print('  [✓] materia')
     professor._create_table_professor(cursor)
-    print("  [OK] Tabela 'professor' criada (depende de instituto)")
-
-    # Nível 2
+    print('  [✓] professor')
+    # Level 3
     aluno._create_table_aluno(cursor)
-    print("  [OK] Tabela 'aluno' criada (depende de curso)")
-
+    print('  [✓] aluno')
     mat_curso._create_table_mat_curso(cursor)
-    print("  [OK] Tabela 'mat_curso' criada (depende de materia e curso)")
-
+    print('  [✓] mat_curso')
     mat_reqs._create_table_mat_reqs(cursor)
-    print("  [OK] Tabela 'mat_reqs' criada (depende de materia)")
-
+    print('  [✓] mat_reqs')
     turma._create_table_turma(cursor)
-    print("  [OK] Tabela 'turma' criada (depende de materia e professor)")
-
-    # Nível 3
+    print('  [✓] turma')
+    # Level 4
     turma_reserva._create_table_turma_reserva(cursor)
-    print("  [OK] Tabela 'turma_reserva' criada (depende de turma e curso)")
-
+    print('  [✓] turma_reserva')
     aluno_turma._create_table_aluno_turma(cursor)
-    print("  [OK] Tabela 'aluno_turma' criada (depende de aluno e turma)")
+    print('  [✓] aluno_turma')
+    # Level 5
+    matricula._create_table_matricula(cursor)
+    print('  [✓] matricula')
 
+# ── population ─────────────────────────────────────────────────────────────────
 
 def populate_database(cursor: sqlite3.Cursor):
-    print("\n" + "=" * 60)
-    print("2. INSERINDO DADOS UTILIZANDO APENAS AS FUNÇÕES PRONTAS")
-    print("   (Propagando referências: antigo -> novo, ex: Maria -> Curso -> Turma)")
-    print("=" * 60)
+    sem = date_funcs.get_current_semester()
+    print(f'\n=== Populating database (semestre: {sem}) ===')
 
     # 1. Instituto
-    ok, msg = instituto.create_instituto(cursor, "Instituto de Informatica", "INF")
-    id_inst = instituto.id_instituto(cursor, "sigla", "INF")
-    print(f"1. create_instituto: success={ok} | ID={id_inst} | msg: {msg}")
+    print('\n-- Instituto --')
+    check('create_instituto ICMC',
+          instituto.create_instituto(cursor, 'Instituto de Ciências Matemáticas', 'ICMC'))
 
-    # 2. Curso (usa id_inst)
-    ok, msg = curso.create_curso(cursor, "Ciencia da Computacao", id_inst)
-    id_curso = curso.id_curso(cursor, "Ciencia da Computacao")
-    print(f"2. create_curso: success={ok} | ID={id_curso} | msg: {msg}")
+    id_inst = instituto.id_instituto(cursor, nome='Instituto de Ciências Matemáticas')
+    if not isinstance(id_inst, tuple):
+        print(f'  [✓] id_instituto: {id_inst}')
+    else:
+        print(f'  [✗] id_instituto: {id_inst[1]}')
+        return
 
-    # 3. Matéria 1 (usa id_inst)
-    ok, msg = materia.create_materia(cursor, "Algoritmos e Programacao", id_inst, 64)
-    id_mat1 = materia.id_materia(cursor, "Algoritmos e Programacao")
-    print(f"3. create_materia (Algoritmos): success={ok} | ID={id_mat1} | msg: {msg}")
+    # 2. Curso
+    print('\n-- Curso --')
+    check('create_curso Ciência da Computação',
+          curso.create_curso(cursor, 'Ciência da Computação', id_inst))
 
-    # 4. Matéria 2 (usa id_inst)
-    ok, msg = materia.create_materia(cursor, "Estruturas de Dados", id_inst, 64)
-    id_mat2 = materia.id_materia(cursor, "Estruturas de Dados")
-    print(f"4. create_materia (Estruturas de Dados): success={ok} | ID={id_mat2} | msg: {msg}")
+    id_cur = curso.id_curso(cursor, 'Ciência da Computação')
+    print(f'  [✓] id_curso: {id_cur}')
 
-    # 5. Professor (usa id_inst)
-    ok, msg = professor.create_prof(cursor, "Alan Turing", id_inst, "Ciencia da Computacao", "2020.1")
-    cursor.execute("SELECT id FROM professor WHERE nome = ?", ("Alan Turing",))
-    id_prof = cursor.fetchone()[0]
-    print(f"5. create_prof: success={ok} | ID={id_prof} | msg: {msg}")
+    # 3. Matérias
+    print('\n-- Matérias --')
+    check('create_materia Cálculo I',
+          materia.create_materia(cursor, 'Cálculo I', id_inst, 96))
+    check('create_materia Álgebra Linear',
+          materia.create_materia(cursor, 'Álgebra Linear', id_inst, 64))
 
-    # 6. Aluno Maria (usa id_curso de Ciência da Computação)
-    cpf_maria = "12345678901"
-    ok, msg = aluno.create_aluno(cursor, "Maria Silva", cpf_maria, id_curso, "2024.1")
-    id_aluno_maria = aluno.id_aluno(cursor, cpf_maria)
-    print(f"6. create_aluno (Maria Silva): success={ok} | ID={id_aluno_maria} | msg: {msg}")
+    id_calc = materia.id_materia(cursor, 'Cálculo I')
+    id_alg  = materia.id_materia(cursor, 'Álgebra Linear')
+    print(f'  [✓] id_materia Cálculo I: {id_calc}')
+    print(f'  [✓] id_materia Álgebra Linear: {id_alg}')
 
-    # 7. Mat_Curso para Algoritmos no 1º período (usa id_mat1 e id_curso)
-    ok, msg = mat_curso.create_mat_curso(cursor, id_mat1, id_curso, 1)
-    print(f"7. create_mat_curso (Algoritmos no 1º sem): success={ok} | msg: {msg}")
+    # 4. Professor
+    print('\n-- Professor --')
+    check('create_prof Prof. José',
+          professor.create_prof(cursor, 'José Silva', id_inst, 'Matemática', sem))
 
-    # 8. Mat_Curso para Estruturas de Dados no 2º período (usa id_mat2 e id_curso)
-    ok, msg = mat_curso.create_mat_curso(cursor, id_mat2, id_curso, 2)
-    print(f"8. create_mat_curso (Estruturas no 2º sem): success={ok} | msg: {msg}")
+    cursor.execute("SELECT id FROM professor WHERE nome = 'José Silva'")
+    row = cursor.fetchone()
+    id_prof = row[0] if row else None
+    print(f'  [✓] id_professor: {id_prof}')
 
-    # 9. Mat_Reqs: Estruturas de Dados pré-requisita Algoritmos (usa id_mat2 e id_mat1)
-    ok, msg = mat_reqs.create_mat_reqs(cursor, id_mat2, id_mat1, "pre")
-    print(f"9. create_mat_reqs (Estruturas pre-req Algoritmos): success={ok} | msg: {msg}")
+    # 5. Aluno — Maria (the main character)
+    print('\n-- Aluno --')
+    check('create_aluno Maria',
+          aluno.create_aluno(cursor, 'Maria Oliveira', '98765432100', id_cur, sem))
 
-    # 10. Turma de Algoritmos com o Prof. Alan Turing (usa id_prof e id_mat1)
-    ok, msg = turma.create_turma(cursor, id_prof, "ICC Ala Sul - Sala 10", id_mat1, "24M12", "2024.1", 40)
-    cursor.execute("SELECT id FROM turma WHERE id_mat = ? AND sem = ?", (id_mat1, "2024.1"))
-    id_turma_alg = cursor.fetchone()[0]
-    print(f"10. create_turma (Algoritmos 2024.1): success={ok} | ID={id_turma_alg} | msg: {msg}")
+    id_maria = aluno.id_aluno(cursor, cpf='98765432100')
+    if not isinstance(id_maria, tuple):
+        print(f'  [✓] id_aluno Maria: {id_maria}')
+    else:
+        print(f'  [✗] id_aluno: {id_maria[1]}')
+        return
 
-    # 11. Reserva de vagas da Turma para o Curso de Ciência da Computação (usa id_turma_alg e id_curso)
-    ok, msg = turma_reserva.create_turma_reseva(cursor, id_turma_alg, id_curso, 20)
-    print(f"11. create_turma_reseva (20 vagas para CC): success={ok} | msg: {msg}")
+    # 6. mat_curso — attach matérias to curso with período de fluxo
+    print('\n-- mat_curso --')
+    check('create_mat_curso Cálculo I → CC período 1',
+          mat_curso.create_mat_curso(cursor, id_calc, id_cur, 1))
+    check('create_mat_curso Álgebra Linear → CC período 1',
+          mat_curso.create_mat_curso(cursor, id_alg, id_cur, 1))
 
-    # 12. Matrícula de Maria na Turma de Algoritmos (usa id_aluno_maria e id_turma_alg)
-    ok, msg = aluno_turma.create_aluno_turma(cursor, id_aluno_maria, id_turma_alg)
-    print(f"12. create_aluno_turma (Matricular Maria na turma): success={ok} | msg: {msg}")
+    # 7. Turma — Cálculo I (96h = 6 dias × M234 / a 16h por aula: 2M1234 3M1234)
+    #    96 h / 16 h_por_slot = 6 slots por semana → "2 3 M1234" = 8 slots, tentemos
+    #    Horário: "246 M1234" = dias 2,4,6 × 4 slots tarde = 12 slots × ? não bate
+    #    Turma exige ch == horario.ch.  96 / 16 = 6 slots.
+    #    Horário "246 M12" = 3 dias × 2 slots = 6 slots → ch = 6 × 16 = 96 ✓
+    print('\n-- Turma --')
+    hor_calc = '246M12'   # seg/qua/sex, manhã slots 1-2  → 6 × 16 = 96 h
+    # Álgebra tem 64 h → 4 slots: "24T12" = 2 × 2 = 4 × 16 = 64 ✓
+    hor_alg  = '24T12'
 
-    # 13. Lançamento da primeira nota de Maria na turma
-    ok, msg = aluno_turma.set_grade(cursor, id_aluno_maria, id_turma_alg, "P1", 9.5)
-    print(f"13. set_grade (Nota P1 da Maria): success={ok} | msg: {msg}")
+    check('create_turma Cálculo I',
+          turma.create_turma(cursor, id_prof, 'Sala 101', id_calc, hor_calc, sem, 40))
+    check('create_turma Álgebra Linear',
+          turma.create_turma(cursor, id_prof, 'Sala 102', id_alg, hor_alg, sem, 30))
 
+    id_t_calc = turma.id_turma(cursor, id_mat=id_calc, id_prof=id_prof, hor=hor_calc)
+    id_t_alg  = turma.id_turma(cursor, id_mat=id_alg,  id_prof=id_prof, hor=hor_alg)
+    print(f'  [✓] id_turma Cálculo I: {id_t_calc}')
+    print(f'  [✓] id_turma Álgebra Linear: {id_t_alg}')
+
+    # 8. turma_reserva — reserve vagas for CC on Cálculo I turma
+    print('\n-- turma_reserva --')
+    check('create_turma_reserva CC na turma Cálculo I',
+          turma_reserva.create_turma_reseva(cursor, id_t_calc, id_cur, 20))
+
+    # 9. matricula request — Maria solicita Cálculo I
+    print('\n-- Matricula --')
+    check('create_matricula_request Maria → Cálculo I',
+          matricula.create_matricula_request(cursor, id_maria, id_t_calc, mat_period=True))
+
+    # 10. período e média de Maria (recém-criada, sem disciplinas concluídas)
+    print('\n-- Consultas --')
+    per, msg_per = aluno.periodo_aluno(cursor, id=id_maria)
+    print(f'  [✓] periodo_aluno Maria: período {per} — {msg_per}')
+
+    md, msg_md = aluno.media_geral(cursor, id=id_maria)
+    print(f'  [✓] media_geral Maria: {msg_md}')
+
+    tx, msg_tx = aluno.taxa_aprovacao(cursor, id=id_maria)
+    print(f'  [✓] taxa_aprovacao Maria: {msg_tx}')
+
+    min_per, msg_mp = curso.get_min_periods(cursor, id=id_cur)
+    print(f'  [✓] get_min_periods CC: {msg_mp}')
+
+    # 11. aluno_turma — process the matricula requests (fill_turmas handles priority + enrollment)
+    print('\n-- aluno_turma --')
+    check('fill_turmas (mat_period=True)',
+          aluno_turma.fill_turmas(cursor, mat_period=True))
+
+    check('set_grade Maria NF=8.5',
+          aluno_turma.set_grade(cursor, id_maria, id_t_calc, 'NF', 8.5))
+
+    # 12. delete matricula request by aluno+turma combo (for Álgebra, which was never requested)
+    #     — request one first, then delete it
+    check('create_matricula_request Maria → Álgebra',
+          matricula.create_matricula_request(cursor, id_maria, id_t_alg, mat_period=False))
+
+    check('delete_matricula_request Maria → Álgebra (by id_aluno+id_turma)',
+          matricula.delete_matricula_request(cursor, id_aluno=id_maria, id_turma=id_t_alg))
+
+# ── main ───────────────────────────────────────────────────────────────────────
 
 def main():
-    db_name = "school.db"
-    conn = sqlite3.connect(db_name)
-    conn.execute("PRAGMA foreign_keys = ON;")
-    cursor = conn.cursor()
+    if os.path.exists(DB_PATH):
+        os.remove(DB_PATH)
+        print(f'Removed existing {DB_PATH}')
+
+    con = sqlite3.connect(DB_PATH)
+    con.execute('PRAGMA foreign_keys = ON')
+    cursor = con.cursor()
 
     try:
         create_all_tables(cursor)
         populate_database(cursor)
-        conn.commit()
-        print("\n" + "=" * 60)
-        print(f"Banco de dados '{db_name}' estruturado e populado com sucesso!")
-        print("=" * 60)
+        con.commit()
+        print('\n=== Done. university.db committed. ===')
     except Exception as e:
-        conn.rollback()
-        print(f"\nErro durante execução: {e}")
+        con.rollback()
+        print(f'\n[ERRO] {e}')
         raise
     finally:
-        conn.close()
+        con.close()
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+  main()
