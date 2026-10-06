@@ -28,22 +28,21 @@ def create_instituto (cursor: sqlite3.Cursor, name: str, sigla: str) :
         return False, f"Database error: {e}"
 
 def id_instituto (cursor: sqlite3.Cursor, id: int = None, nome: str = None, sigla: str = None) :
-    if id is not None :
-        try :
+    try :
+        if id is not None : 
             id_inst = int(id)
-        except (ValueError, TypeError) :
-            return None, 'Invalid id'
-        cursor.execute('''SELECT id FROM instituto WHERE id = ?''', (id_inst,))
-    elif nome is not None :
-        cursor.execute('''SELECT id FROM instituto WHERE nome = ?''', (nome,))
-    elif sigla is not None :
-        cursor.execute('''SELECT id FROM instituto WHERE sigla = ?''', (sigla,))
-    else : 
-        return None, 'Either id, nome or sigla must be provided!'
-    result = cursor.fetchone()  
-    try: 
+            cursor.execute('''SELECT id FROM instituto WHERE id = ?''', (id_inst,))
+        elif nome is not None :
+            cursor.execute('''SELECT id FROM instituto WHERE nome = ?''', (nome,))
+        elif sigla is not None :
+            cursor.execute('''SELECT id FROM instituto WHERE sigla = ?''', (sigla,))
+        else : 
+            return None, 'Either id, nome or sigla must be provided!'
+        result = cursor.fetchone()  
         if result: return result[0] 
-        return 0      
+        return 0  
+    except (ValueError, TypeError) :
+        return None, 'Invalid id'    
     except sqlite3.Error as e:
        return None, f"Database error: {e}"
 

@@ -96,7 +96,7 @@ class Horario :
                 formated_hor += elem
             formated_hor += ' '
         self.array_form = table
-        self.formated_hor = formated_hor
+        self.formated_hor = formated_hor.removesuffix(' ')
         self.ch = carga_horaria
 
     @staticmethod

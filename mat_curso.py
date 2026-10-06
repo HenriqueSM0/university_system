@@ -43,9 +43,9 @@ def create_mat_curso (cursor: sqlite3.Cursor, id_mat:int, id_cur:int, periodo_fl
         return False, f'Invalid flux period'    
 
 def id_materia (cursor: sqlite3.Cursor, id_mat:int, id_cur:int) :
-    cursor.execute('''SELECT id FROM mat_curso WHERE id_mat = ? AND id_cur = ?''', (id_mat, id_cur))
-    result = cursor.fetchone()  
-    try: 
+    try:
+        cursor.execute('''SELECT id FROM mat_curso WHERE id_mat = ? AND id_cur = ?''', (id_mat, id_cur))
+        result = cursor.fetchone()  
         if result: return result[0] 
         return 0      
     except sqlite3.Error as e:

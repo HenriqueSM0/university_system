@@ -42,9 +42,9 @@ def create_aluno (cursor: sqlite3.Cursor, name: str, cpf: str, id_cur: int, sem_
 def id_aluno (cursor: sqlite3.Cursor, cpf: str) :
     if len(cpf) != 11 : 
         return None
-    cursor.execute('''SELECT id FROM aluno WHERE cpf = ?''', (cpf,))
-    result = cursor.fetchone()  
-    try: 
+    try:
+        cursor.execute('''SELECT id FROM aluno WHERE cpf = ?''', (cpf,))
+        result = cursor.fetchone()  
         if result: return result[0] 
         return 0      
     except sqlite3.Error as e:
@@ -95,8 +95,8 @@ def media_geral (cursor: sqlite3.Cursor, id: int = None, cpf: str = None) :
         return 0, 'Either id or cpf must be provided!'
     nome_aluno = row[0]
     cursor.execute('''
-        SELECT notas, carga_horaria FROM (aluno_turma JOIN turma ON id_turma = turma.id) 
-        JOIN (materia ON id_mat = materia.id)
+        SELECT notas, carga_hor FROM (aluno_turma JOIN turma ON id_turma = turma.id) 
+        JOIN materia ON id_mat = materia.id
         WHERE id_aluno = ?''', (id_aluno,))
     sum_gr = 0
     sum_ch = 0
@@ -137,7 +137,7 @@ def taxa_aprovacao (cursor: sqlite3.Cursor, id: int = None, cpf: str = None) :
     nome_aluno = row[0]
     cursor.execute('''SELECT COUNT(*) FROM aluno_turma WHERE id_aluno = ? AND status = 'approved' ''', (id_aluno,))
     n_apr = cursor.fetchone()[0]
-    cursor.execute('''SELECT COUNT(*) FROM aluno_turma WHERE id_aluno = ? AND status != 'cursing' ''', (id_aluno,))
+    cursor.execute('''SELECT COUNT(*) FROM aluno_turma WHERE id_aluno = ? AND status != 'in_progress' ''', (id_aluno,))
     n_total = cursor.fetchone()[0]
     if n_total == 0 :
         return -1, f'O aluno {nome_aluno} - {cpf} nao finalizou disciplinas ainda'

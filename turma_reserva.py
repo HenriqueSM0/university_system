@@ -1,4 +1,5 @@
 import sqlite3
+import date_funcs
 
 def _create_table_turma_reserva (cursor: sqlite3.Cursor) :
     cursor.execute(
@@ -15,13 +16,17 @@ def _create_table_turma_reserva (cursor: sqlite3.Cursor) :
 
 def create_turma_reseva (cursor: sqlite3.Cursor, id_turma: int, id_cur: int, n_vagas: int) :
     try:
-        cursor.execute('SELECT id_mat, n_vagas FROM turma WHERE id = ?', (id_turma,))
+        cursor.execute('SELECT id_mat, n_vagas, sem FROM turma WHERE id = ?', (id_turma,))
         row = cursor.fetchone()
         if not row:
             return False, f"Turma with ID {id_turma} does not exist"
         else : 
             id_mat = row[0]
             n_vagas_turma = row[1]
+            sem = row[2]
+            current_sem = date_funcs.get_current_semester() 
+            if current_sem != sem :
+                return False, f'Nao e possivel reservar a turma "{id_turma}" de {sem} para {current_sem}'
             cursor.execute(
                 'SELECT COALESCE(SUM(n_vagas), 0) FROM turma_reserva WHERE id_turma = ?',
                 (id_turma,)

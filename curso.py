@@ -29,9 +29,9 @@ def create_curso (cursor: sqlite3.Cursor, name: str, id_inst: int) :
         return False, f"Database error: {e}"   
 
 def id_curso (cursor: sqlite3.Cursor, nome: str) :
-    cursor.execute('''SELECT id FROM curso WHERE nome = ?''', (nome,))
-    result = cursor.fetchone()  
-    try: 
+    try:
+        cursor.execute('''SELECT id FROM curso WHERE nome = ?''', (nome,))
+        result = cursor.fetchone()  
         if result: return result[0] 
         return 0      
     except sqlite3.Error as e:
