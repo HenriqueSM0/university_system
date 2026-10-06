@@ -1,5 +1,6 @@
 import sqlite3
 import aluno
+import date_funcs
 
 def _create_table_matricula (cursor: sqlite3.Cursor) :
     cursor.execute(
@@ -24,11 +25,15 @@ def create_matricula_request (cursor: sqlite3.Cursor, id_aluno: int, id_turma: i
         nome_aluno = row[0]
         cpf_aluno = row[1]
         id_cur_aluno = row[2]
-        cursor.execute('SELECT id_mat FROM turma WHERE id = ?', (id_turma,))
+        cursor.execute('SELECT id_mat, sem FROM turma WHERE id = ?', (id_turma,))
         row = cursor.fetchone()
         if not row:
             return False, f"Turma with ID {id_turma} does not exist"
         id_mat = row[0]
+        sem = row[1]
+        current_sem = date_funcs.get_current_semester() 
+        if current_sem != sem :
+            return False, f'Nao e possivel solicitar matricula na turma "{id_turma}" de {sem} para {current_sem}'
         cursor.execute('''SELECT 1 FROM matricula JOIN (turma ON id_turma = turma.id) 
             WHERE id_aluno = ? AND id_mat = ? AND status = 'requested' ''', (id_aluno, id_mat,))
         row = cursor.fetchone()
@@ -76,8 +81,6 @@ def create_matricula_request (cursor: sqlite3.Cursor, id_aluno: int, id_turma: i
         md = aluno.media_geral(cursor, id_aluno)[0]
         tx_ap = aluno.taxa_aprovacao(cursor, id_aluno)[0]
         per_aluno = aluno.periodo_aluno(cursor, id_aluno)[0]
-        cursor.execute('''SELECT periodo_fluxo FROM mat_curso WHERE id_cur = ? AND id_mat = ?''', (id_cur_aluno, id_mat))
-        row = cursor.fetchone()
         if per_aluno == 1:
             prioridade = 999999
         else:
