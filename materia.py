@@ -27,9 +27,10 @@ def create_materia (cursor: sqlite3.Cursor, name: str, id_inst: int, carga_hor: 
             ''', (name, id_inst, carga_hor))
             return True, f"Materia '{name} - {nome_inst}' created with ID {cursor.lastrowid}"
         except sqlite3.IntegrityError as e:
-            if "unique_nome" in str(e):
+            if "unique_nome" in str(e) or "materia.nome" in str(e):
                 return False, f"Materia '{name}' already exists"
-            return False, f"Constraint error: {e}"
+            else :
+                return False, f"Constraint error: {e}"
         except sqlite3.Error as e:
             return False, f"Database error: {e}" 
     else :

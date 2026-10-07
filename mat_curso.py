@@ -34,9 +34,10 @@ def create_mat_curso (cursor: sqlite3.Cursor, id_mat:int, id_cur:int, periodo_fl
                 ''', (id_mat, id_cur, periodo_fluxo))
             return True, f"mat_curso '{nome_cur} - {nome_mat} - {periodo_fluxo} periodo' created with ID {cursor.lastrowid}"
         except sqlite3.IntegrityError as e:
-            if "unique_nat_cur" in str(e):
+            if "unique_mat_cur" in str(e) or ("UNIQUE" in str(e) and "mat_curso" in str(e)):
                 return False, f"mat_curso '{nome_cur} - {nome_mat} - {periodo_fluxo} periodo' already exists"
-            return False, f"Database constraint error: {e}"
+            else :
+                return False, f"Database constraint error: {e}"
         except sqlite3.Error as e:
             return False, f"Database error: {e}"
     else :

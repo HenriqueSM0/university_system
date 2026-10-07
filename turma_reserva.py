@@ -48,9 +48,10 @@ def create_turma_reseva (cursor: sqlite3.Cursor, id_turma: int, id_cur: int, n_v
             ''', (id_turma, id_cur, n_vagas))
         return True, f"turma_reserva '{nome_cur} - {id_turma} - {nome_mat} - {n_vagas}' created with ID {cursor.lastrowid}"
     except sqlite3.IntegrityError as e:
-        if "unique_turma_reserva" in str(e):
+        if "unique_turma_reserva" in str(e) or ("UNIQUE" in str(e) and "turma_reserva" in str(e)):
             return False, f"turma_reserva '{nome_cur} - {id_turma} - {nome_mat}' already exists"
-        return False, f"Database constraint error: {e}"
+        else :
+            return False, f"Database constraint error: {e}"
     except sqlite3.Error as e:
         return False, f"Database error: {e}"
 

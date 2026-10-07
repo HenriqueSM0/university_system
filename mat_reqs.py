@@ -41,16 +41,18 @@ def create_mat_reqs (cursor: sqlite3.Cursor, id_mat_reqstt: int, id_mat_reqsid: 
             for row in rows :
                 if row[0] < row[1] or type_param == 'pre' :
                     return_str += f'{name_reqstt} is from {row[0]} period, while {name_reqsid} is from {row[1]} in curso with ID {row[2]}\n'
-            return_str = return_str.removesuffix('\n')
-            return False, return_str 
+            if return_str != '' :        
+                return_str = return_str.removesuffix('\n')
+                return False, return_str 
         cursor.execute('''
             INSERT INTO mat_reqs (id_mat_reqstt, id_mat_reqsid, type) 
             VALUES (?, ?, ?)
             ''', (id_mat_reqstt, id_mat_reqsid, type_param))
         return True, f"mat_reqs '{name_reqstt} - {name_reqsid}' - type : {type_param}' created with ID {cursor.lastrowid}"
     except sqlite3.IntegrityError as e:
-        if "unique_mat_reqs" in str(e):
+        if "unique_mat_reqs" in str(e) or ("UNIQUE" in str(e) and "mat_reqs" in str(e)):
             return False, f"mat_reqs '{name_reqstt} - {name_reqsid} - type : {type_param}' already exists"
-        return False, f"Database constraint error: {e}"
+        else :
+            return False, f"Database constraint error: {e}"
     except sqlite3.Error as e:
         return False, f"Database error: {e}"

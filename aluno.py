@@ -33,9 +33,10 @@ def create_aluno (cursor: sqlite3.Cursor, name: str, cpf: str, id_cur: int, sem_
         ''', (name, cpf, id_cur, sem_ing))
         return True, f"Aluno '{name} - {cpf} - {nome_cur} - ' created with ID {cursor.lastrowid}"
     except sqlite3.IntegrityError as e:
-        if "unique_cpf" in str(e):
+        if "unique_cpf" in str(e) or "aluno.cpf" in str(e):
             return False, f"CPF '{cpf}' already exists"
-        return False, f"Constraint error: {e}"
+        else :
+            return False, f"Constraint error: {e}"
     except sqlite3.Error as e:
         return False, f"Database error: {e}"   
 

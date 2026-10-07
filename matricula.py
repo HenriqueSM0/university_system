@@ -97,9 +97,10 @@ def create_matricula_request (cursor: sqlite3.Cursor, id_aluno: int, id_turma: i
             ''', (id_aluno, id_turma, prioridade, 'requested'))
         return True, f'Requisição de matricula {nome_aluno} - {cpf_aluno} na turma {id_turma} criada com {cursor.lastrowid}'
     except sqlite3.IntegrityError as e:
-        if "unique_matricula" in str(e):
+        if "unique_matricula" in str(e) or ("UNIQUE" in str(e) and "matricula" in str(e)):
             return False, f"request '{nome_aluno} - {cpf_aluno} - {id_turma} - requested' already exists"
-        return False, f"Database constraint error: {e}"
+        else :
+            return False, f"Database constraint error: {e}"
     except sqlite3.Error as e:
         return False, f"Database error: {e}"
 

@@ -19,11 +19,12 @@ def create_instituto (cursor: sqlite3.Cursor, name: str, sigla: str) :
         ''', (name, sigla))
         return True, f"Institute '{name}' created with ID {cursor.lastrowid}"
     except sqlite3.IntegrityError as e:
-        if "unique_nome" in str(e):
+        if "unique_nome" in str(e) or "instituto.nome" in str(e):
             return False, f"Institute '{name}' already exists"
-        elif "unique_sigla" in str(e):
+        elif "unique_sigla" in str(e) or "instituto.sigla" in str(e):
             return False, f"Sigla '{sigla}' already exists"
-        return False, f"Database constraint error: {e}"
+        else :
+            return False, f"Database constraint error: {e}"
     except sqlite3.Error as e:
         return False, f"Database error: {e}"
 
