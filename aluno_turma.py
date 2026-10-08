@@ -10,69 +10,74 @@ def _create_table_aluno_turma (cursor: sqlite3.Cursor) :
             status TEXT NOT NULL,
             FOREIGN KEY (id_turma) REFERENCES turma(id) ON DELETE CASCADE ON UPDATE CASCADE,
             FOREIGN KEY (id_aluno) REFERENCES aluno(id) ON DELETE CASCADE ON UPDATE CASCADE,
-            CONSTRAINT unique_turma_aluno UNIQUE (id_turma, id_aluno)
+            CONSTRAINT unique_aluno_turma UNIQUE (id_turma, id_aluno)
         )'''
     )
 
 def fill_turmas (cursor: sqlite3.Cursor, mat_period: bool) :
-    try:
-        return_str = ''
-        if mat_period :
-            cursor.execute('''SELECT turma_reserva.n_vagas, id_cur, id_turma FROM 
-                turma JOIN turma_reserva ON id_turma = turma.id ''')
-            rows = cursor.fetchall()
-            for row in rows:
-                n_vagas = row[0]
-                id_cur = row[1]
-                id_turma = row[2]
-                cursor.execute('''SELECT id_aluno, cpf, nome FROM matricula 
-                    JOIN turma ON id_turma = turma.id
-                    JOIN aluno ON id_aluno = aluno.id
-                    WHERE status = 'requested' AND id_cur = ?
-                    ORDER BY priority DESC''', (id_cur,))
-                alunos = cursor.fetchall()
-                size = min(n_vagas, len(alunos))
-                try :
-                    for i in range(size) :
-                        cursor.execute('''INSERT INTO aluno_turma(id_aluno, id_turma, notas, status)
-                            VALUES (?, ?, '{}', 'in_progress')''', (alunos[i][0], id_turma,))
-                        return_str += f'Aluno {alunos[i][2]} - {alunos[i][1]} inserted in turma {id_turma} - {id_cur} with ID {cursor.lastrowid}'  
-                        cursor.execute('''UPDATE matricula SET status = 'granted' WHERE id_aluno = ? AND id_turma = ?''', (alunos[i][0], id_turma,)) 
-                    for i in range(size, len(alunos)) :
-                        cursor.execute('''UPDATE matricula SET status = 'rejected' WHERE id_aluno = ? AND id_turma = ?''', (alunos[i][0], id_turma,))
-                        return_str += f'Aluno {alunos[i][2]} - {alunos[i][1]} out of turma {id_turma} - {id_cur} with ID {cursor.lastrowid}'
-                except sqlite3.IntegrityError as e:
-                    if "unique_aluno_turma" in str(e):
-                        return False, f"Aluno {alunos[i][2]} ({alunos[i][1]}) já está na turma {id_turma}"
-                    return False, f"Database constraint error: {e}"        
-        else :
-            cursor.execute('''SELECT n_vagas, id FROM turma''')
-            rows = cursor.fetchall()
-            for row in rows:
-                n_vagas = row[0]
-                id_turma = row[1]
-                cursor.execute('''SELECT id_aluno, cpf, nome FROM matricula 
-                    JOIN aluno ON id_aluno = aluno.id
-                    WHERE status = 'requested' AND id_turma = ?
-                    ORDER BY priority DESC''', (id_turma,))
-                alunos = cursor.fetchall()
-                size = min(n_vagas, len(alunos))
-                try :
-                    for i in range(size) :
-                        cursor.execute('''INSERT INTO aluno_turma(id_aluno, id_turma, notas, status)
-                            VALUES (?, ?, '{}', 'in_progress')''', (alunos[i][0], id_turma,))
-                        return_str += f'Aluno {alunos[i][2]} - {alunos[i][1]} inserted in turma {id_turma} with ID {cursor.lastrowid}'  
-                        cursor.execute('''UPDATE matricula SET status = 'granted' WHERE id_aluno = ? AND id_turma = ?''', (alunos[i][0], id_turma,)) 
-                    for i in range(size, len(alunos)) :
-                        cursor.execute('''UPDATE matricula SET status = 'rejected' WHERE id_aluno = ? AND id_turma = ?''', (alunos[i][0], id_turma,))
-                        return_str += f'Aluno {alunos[i][2]} - {alunos[i][1]} out of turma {id_turma} with ID {cursor.lastrowid}'
-                except sqlite3.IntegrityError as e:
-                    if "unique_aluno_turma" in str(e):
-                        return False, f"Aluno {alunos[i][2]} ({alunos[i][1]}) já está na turma {id_turma}"
+    return_str = ''
+    if mat_period :
+        cursor.execute('''SELECT turma_reserva.n_vagas, id_cur, id_turma FROM 
+            turma JOIN turma_reserva ON id_turma = turma.id ''')
+        rows = cursor.fetchall()
+        for row in rows:
+            n_vagas = row[0]
+            id_cur = row[1]
+            id_turma = row[2]
+            cursor.execute('''SELECT id_aluno, cpf, nome FROM matricula 
+                JOIN turma ON id_turma = turma.id
+                JOIN aluno ON id_aluno = aluno.id
+                WHERE status = 'requested' 
+                AND id_cur = ? AND id_turma = ?
+                ORDER BY priority DESC''', (id_cur, id_turma,))
+            alunos = cursor.fetchall()
+            size = min(n_vagas, len(alunos))
+            try :
+                for i in range(size) :
+                    cursor.execute('''INSERT INTO aluno_turma(id_aluno, id_turma, notas, status)
+                        VALUES (?, ?, '{}', 'in_progress')''', (alunos[i][0], id_turma,))
+                    return_str += f'Aluno {alunos[i][2]} - {alunos[i][1]} inserted in turma {id_turma} - {id_cur} with ID {cursor.lastrowid}\n'  
+                    cursor.execute('''UPDATE matricula SET status = 'granted' WHERE id_aluno = ? AND id_turma = ?''', (alunos[i][0], id_turma,)) 
+                for i in range(size, len(alunos)) :
+                    cursor.execute('''UPDATE matricula SET status = 'rejected' WHERE id_aluno = ? AND id_turma = ?''', (alunos[i][0], id_turma,))
+                    return_str += f'Aluno {alunos[i][2]} - {alunos[i][1]} out of turma {id_turma} - {id_cur} with ID {cursor.lastrowid}\n'
+            except sqlite3.IntegrityError as e:
+                if "unique_aluno_turma" in str(e) or ("UNIQUE" in str(e) and "aluno_turma" in str(e)):
+                    return_str += f"Aluno {alunos[i][2]} ({alunos[i][1]}) já está na turma {id_turma}\n"
+                else :
+                    return False, f"Database constraint error: {e}" 
+            except sqlite3.Error as e:
+                    return False, f"Database error: {e}"       
+    else :
+        cursor.execute('''SELECT n_vagas, id FROM turma''')
+        rows = cursor.fetchall()
+        for row in rows:
+            n_vagas = row[0]
+            id_turma = row[1]
+            cursor.execute('''SELECT id_aluno, cpf, nome FROM matricula 
+                JOIN aluno ON id_aluno = aluno.id
+                WHERE status = 'requested' AND id_turma = ?
+                ORDER BY priority DESC''', (id_turma,))
+            alunos = cursor.fetchall()
+            size = min(n_vagas, len(alunos))
+            try :
+                for i in range(size) :
+                    cursor.execute('''INSERT INTO aluno_turma(id_aluno, id_turma, notas, status)
+                        VALUES (?, ?, '{}', 'in_progress')''', (alunos[i][0], id_turma,))
+                    return_str += f'Aluno {alunos[i][2]} - {alunos[i][1]} inserted in turma {id_turma} with ID {cursor.lastrowid}\n'  
+                    cursor.execute('''UPDATE matricula SET status = 'granted' WHERE id_aluno = ? AND id_turma = ?''', (alunos[i][0], id_turma,)) 
+                for i in range(size, len(alunos)) :
+                    cursor.execute('''UPDATE matricula SET status = 'rejected' WHERE id_aluno = ? AND id_turma = ?''', (alunos[i][0], id_turma,))
+                    return_str += f'Aluno {alunos[i][2]} - {alunos[i][1]} out of turma {id_turma} with ID {cursor.lastrowid}\n'
+            except sqlite3.IntegrityError as e:
+                if "unique_aluno_turma" in str(e) or ("UNIQUE" in str(e) and "aluno_turma" in str(e)):
+                    return_str += f"Aluno {alunos[i][2]} ({alunos[i][1]}) já está na turma {id_turma}\n"
+                else :
                     return False, f"Database constraint error: {e}"
-        return True, return_str
-    except sqlite3.Error as e:
-        return False, f"Database error: {e}"
+            except sqlite3.Error as e:
+                return False, f"Database error: {e}"
+    return_str = return_str.removesuffix('\n')
+    return True, return_str
 
 def set_grade (cursor: sqlite3.Cursor, id_aluno: int, id_turma: int, nome_grade: str, grade: float) :
     if 0 <= grade <= 10 :
@@ -101,4 +106,4 @@ def set_grade (cursor: sqlite3.Cursor, id_aluno: int, id_turma: int, nome_grade:
         except sqlite3.Error as e:
             return False, f"Database error: {e}"    
     else :
-        return False, f"Grade need to be in [0, 10]!"    
+        return False, f"Grade need to be in [0, 10]!"
