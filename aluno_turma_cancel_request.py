@@ -46,5 +46,21 @@ def cancel_aluno_turma_request (cursor: sqlite3.Cursor, id_aluno: int, id_turma:
             VALUES (?, 'in_progress', ?)''', (id_aluno_turma, reason,))
         return True, f'Solicitacao de cancelamento em analise - fique atento, entraremos em contato!'
     except sqlite3.Error as e:
-        return False, f"Database error: {e}"    
+        return False, f"Database error: {e}"  
+
+def cancel_aluno_turma_resolve (cursor: sqlite3.Cursor, id_aluno_turma_cancel: int, result: bool) :
+    try :
+        cursor.execute('SELECT 1 FROM aluno_turma_cancel_request WHERE id = ?', (id_aluno_turma_cancel,))
+        row = cursor.fetchone()
+        if not row :
+            return False, f'There is no aluno_turma_cancel_request with ID {id_aluno_turma_cancel}'
+        if result :
+            result_str = 'granted'
+        else :
+            result_str = 'rejected'
+        cursor.execute('''UPDATE aluno_turma_cancel_request SET 
+            result = ?, resolved_at = CURRENT_TIMESTAMP WHERE id = ?''', (result_str, id_aluno_turma_cancel,))
+        return True, f'Request of aluno_turma_cancel determined as {result_str}'
+    except sqlite3.Error as e:
+        return False, f"Database error: {e}"
     
