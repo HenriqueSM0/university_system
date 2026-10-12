@@ -73,7 +73,7 @@ def create_matricula_request (cursor: sqlite3.Cursor, id_aluno: int, id_turma: i
         if rows :
             return_str = ''
             for row in rows:
-                if row[2] is None or row[2] == 'reproved' or (row[1] == 'pre' and row[2] == 'in_progress') :
+                if row[2] is None or row[2] == 'reproved' or row[2] == 'canceled' or (row[1] == 'pre' and row[2] == 'in_progress') :
                     return_str += f'{nome_mat} {row[1]}-requires {row[0]}\n'
             if return_str:
                 return_str = return_str.removesuffix('\n')

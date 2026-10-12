@@ -1,4 +1,7 @@
-import sqlite3, json
+import sqlite3
+import json
+import date_funcs
+import ai_funcs as AI
 
 def _create_table_aluno_turma (cursor: sqlite3.Cursor) :
     cursor.execute(
@@ -94,11 +97,21 @@ def set_grade (cursor: sqlite3.Cursor, id_aluno: int, id_turma: int, nome_grade:
                 return False, f"Turma with ID {id_turma} does not exist"
             id_mat = row[0]
             sem = row[1]
-            cursor.execute('SELECT notas FROM aluno_turma WHERE id_turma = ? AND id_aluno = ?', (id_turma, id_aluno,))
+            current_sem = date_funcs.get_current_semester() 
+            if current_sem != sem :
+                return False, f'Nao e possivel configurar notas de alunos da turma "{id_turma}" de {sem} em {current_sem}'
+            cursor.execute(
+                'SELECT notas, status FROM aluno_turma WHERE id_turma = ? AND id_aluno = ?',
+                (id_turma, id_aluno)
+                )
             row = cursor.fetchone()
             if not row:
                 return False, f"aluno_turma with ID {id_aluno} - {id_turma} does not exist"
-            notas = json.loads(row[0])
+            notas_json = row[0]
+            status = row[1]
+            if status == 'canceled':
+                return False, f'Aluno {nome_aluno} cancelou a turma {id_turma}!'
+            notas = json.loads(notas_json)
             notas[nome_grade] = grade
             cursor.execute('UPDATE aluno_turma SET notas = ? WHERE id_aluno = ? AND id_turma = ?', 
                            (json.dumps(notas), id_aluno, id_turma,))

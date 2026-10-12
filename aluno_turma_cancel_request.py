@@ -50,12 +50,14 @@ def cancel_aluno_turma_request (cursor: sqlite3.Cursor, id_aluno: int, id_turma:
 
 def cancel_aluno_turma_resolve (cursor: sqlite3.Cursor, id_aluno_turma_cancel: int, result: bool) :
     try :
-        cursor.execute('SELECT 1 FROM aluno_turma_cancel_request WHERE id = ?', (id_aluno_turma_cancel,))
+        cursor.execute('SELECT id_aluno_turma FROM aluno_turma_cancel_request WHERE id = ?', (id_aluno_turma_cancel,))
         row = cursor.fetchone()
         if not row :
             return False, f'There is no aluno_turma_cancel_request with ID {id_aluno_turma_cancel}'
+        id_aluno_turma = row[0]
         if result :
             result_str = 'granted'
+            cursor.execute('''UPDATE aluno_turma SET status = 'canceled' WHERE id = ?''', (id_aluno_turma,))
         else :
             result_str = 'rejected'
         cursor.execute('''UPDATE aluno_turma_cancel_request SET 
