@@ -1,4 +1,5 @@
 import sqlite3
+import date_funcs
 
 def _create_table_professor (cursor: sqlite3.Cursor) :
     cursor.execute(
@@ -12,11 +13,9 @@ def _create_table_professor (cursor: sqlite3.Cursor) :
         )'''
     )
 
-def create_prof (cursor: sqlite3.Cursor, nome: str, id_inst: int, area: str, sem_ing_inicio: str) :
+def create_prof (cursor: sqlite3.Cursor, nome: str, id_inst: int, area: str) :
     if area.strip() == '' :
         area = None
-    if len(sem_ing_inicio) < 6 or (sem_ing_inicio[-1] not in ['1', '2']) or sem_ing_inicio[-2] != '.' :
-        return False, 'Invalid sem_ing_inicio' 
     try:
         cursor.execute('SELECT id, nome FROM instituto WHERE id = ?', (id_inst,))
         inst = cursor.fetchone()
@@ -24,6 +23,7 @@ def create_prof (cursor: sqlite3.Cursor, nome: str, id_inst: int, area: str, sem
             return False, f"Instituto with ID {id_inst} does not exist"
         else :
             nome_inst = inst[1]
+        sem_ing_inicio = date_funcs.get_current_semester()
         cursor.execute('''
             INSERT INTO professor (nome, id_inst, area, sem_ing_inicio) 
             VALUES (?, ?, ?, ?)

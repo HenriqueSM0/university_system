@@ -1,6 +1,7 @@
 import sqlite3
 import horario as H
 import ai_funcs as AI
+import date_funcs
 import materia
 
 def _create_table_turma (cursor: sqlite3.Cursor) :
@@ -18,11 +19,9 @@ def _create_table_turma (cursor: sqlite3.Cursor) :
         )'''
     )
 
-def create_turma (cursor: sqlite3.Cursor, id_prof: int, local: str, id_mat: int, hor: str, sem: str, n_vagas: int) :
+def create_turma (cursor: sqlite3.Cursor, id_prof: int, local: str, id_mat: int, hor: str, n_vagas: int) :
     if not (0 <= n_vagas <= 120):
         return False, 'Numero de vagas e de (0-120)'
-    if len(sem) < 6 or (sem[-1] not in ['1', '2']) or sem[-2] != '.' :
-        return False, 'Invalid semester' 
     obj_hor = H.Horario(hor)
     if not obj_hor.array_form :
         return False, 'Invalid horario'
@@ -39,6 +38,7 @@ def create_turma (cursor: sqlite3.Cursor, id_prof: int, local: str, id_mat: int,
         if not prof:
             return False, f"Professor with ID {id_prof} does not exist"
         else : 
+            sem = date_funcs.get_current_semester()
             nome_prof = prof[1]
             nome_mat = mat[1]
             ch_materia = mat[2]
