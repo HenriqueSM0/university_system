@@ -15,11 +15,9 @@ def _create_table_aluno (cursor: sqlite3.Cursor) :
         )'''
     )
 
-def create_aluno (cursor: sqlite3.Cursor, name: str, cpf: str, id_cur: int, sem_ing: str) :
+def create_aluno (cursor: sqlite3.Cursor, name: str, cpf: str, id_cur: int) :
     if len(cpf) != 11 : 
         return False, 'Invalid CPF'
-    if sem_ing[-1] not in ['1', '2'] and sem_ing[-2] != '.' :
-        return False, 'Invalid semester' 
     try:
         cursor.execute('SELECT id, nome FROM curso WHERE id = ?', (id_cur,))
         cur = cursor.fetchone()
@@ -27,6 +25,7 @@ def create_aluno (cursor: sqlite3.Cursor, name: str, cpf: str, id_cur: int, sem_
             return False, f"Curso with ID {id_cur} does not exist"
         else : 
             nome_cur = cur[1]
+        sem_ing = df.get_current_semester()
         cursor.execute('''
             INSERT INTO aluno (nome, cpf, id_cur, sem_ing) 
             VALUES (?, ?, ?, ?)
