@@ -203,7 +203,7 @@ def populate_database(cursor: sqlite3.Cursor):
     for i, (nome, cpf) in enumerate(ALUNOS):
         id_cur = (i % len(CURSOS)) + 1
         check(f'create_aluno {nome}',
-              aluno.create_aluno(cursor, nome, cpf, id_cur, sem))
+              aluno.create_aluno(cursor, nome, cpf, id_cur))
 
     # 6. mat_curso
     print('\n-- mat_curso --')
@@ -260,8 +260,8 @@ def populate_database(cursor: sqlite3.Cursor):
           mat_reqs.create_mat_reqs(cursor, 9, 8, 'pre'))
     check('pre: BD → Estrutura',
           mat_reqs.create_mat_reqs(cursor, 10, 9, 'pre'))
-    check('co: Redes → SO',
-          mat_reqs.create_mat_reqs(cursor, 11, 12, 'co'))
+    check('pre: Redes → SO',
+          mat_reqs.create_mat_reqs(cursor, 11, 12, 'pre'))
     check('pre: Física II → Física I',
           mat_reqs.create_mat_reqs(cursor, 17, 16, 'pre'))
     check('pre: Física III → Física II',
@@ -284,20 +284,16 @@ def populate_database(cursor: sqlite3.Cursor):
     }
 
     HORARIOS = {
-        96: ['246M12', '246T12', '35M123'],
-        80: ['24M12 6M1', '24T12 6T1', '35T12 6T2'],
-        64: ['24M34', '24T34', '35M34'],
+        96: ['246M12', '35T12', '24M1234'],
+        80: ['24M12', '35T12', '246T1'],
+        64: ['24T12', '35M12', '2M1234'],
     }
 
     turmas_criadas = []
-    prof_turma_count = {}
     for id_mat, id_prof in PROF_MAT.items():
         cursor.execute('SELECT carga_hor FROM materia WHERE id = ?', (id_mat,))
         ch = cursor.fetchone()[0]
-        idx = prof_turma_count.get(id_prof, 0)
-        hor_list = HORARIOS.get(ch, HORARIOS[80])
-        hor = hor_list[idx % len(hor_list)]
-        prof_turma_count[id_prof] = idx + 1
+        hor = HORARIOS.get(ch, HORARIOS[80])[0]
 
         cursor.execute('SELECT nome FROM materia WHERE id = ?', (id_mat,))
         nome_mat = cursor.fetchone()[0]
@@ -404,7 +400,7 @@ def populate_database(cursor: sqlite3.Cursor):
     # ── 11. fill_turmas ───────────────────────────────────────────────────
     print('\n-- fill_turmas --')
     check('fill_turmas (mat_period=True)',
-          aluno_turma.fill_turmas(cursor, mat_period=True))
+        turma.fill_turmas(cursor, mat_period=True))
 
     # ── 12. set_grade ─────────────────────────────────────────────────────
     print('\n-- set_grade --')
@@ -522,7 +518,7 @@ def populate_database(cursor: sqlite3.Cursor):
     print('\n-- TESTE: finish_turmas --')
 
     check('finish_turmas (sem todas as NF - deve falhar)',
-          aluno_turma.finish_turmas(cursor))
+        turma.finish_turmas(cursor))
 
     print('\n  Dando NF para todos os aluno_turma em progresso...')
     cursor.execute('''
@@ -540,7 +536,7 @@ def populate_database(cursor: sqlite3.Cursor):
     print(f'  [✓] {len(pendentes)} notas finais atribuídas')
 
     check('finish_turmas (com todas as NF)',
-          aluno_turma.finish_turmas(cursor))
+        turma.finish_turmas(cursor))
 
     cursor.execute('''
         SELECT status, COUNT(*) FROM aluno_turma GROUP BY status
