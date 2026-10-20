@@ -97,7 +97,7 @@ def media_geral (cursor: sqlite3.Cursor, id: int = None, cpf: str = None) :
     cursor.execute('''
         SELECT notas, carga_hor FROM (aluno_turma JOIN turma ON id_turma = turma.id) 
         JOIN materia ON id_mat = materia.id
-        WHERE id_aluno = ?''', (id_aluno,))
+        WHERE id_aluno = ? AND status IN ('approved', 'reproved')''', (id_aluno,))
     sum_gr = 0
     sum_ch = 0
     rows = cursor.fetchall()
@@ -114,6 +114,43 @@ def media_geral (cursor: sqlite3.Cursor, id: int = None, cpf: str = None) :
         return -1, f'O aluno {nome_aluno} - {cpf} nao finalizou disciplinas ainda'
     mg = sum_gr / sum_ch
     return mg, f'O aluno {nome_aluno} - {cpf} tem média geral M = {mg}'
+
+def frequencia (cursor: sqlite3.Cursor, id: int = None, cpf: str = None, id_turma: int = None) :
+    if id_turma is None:
+        return -1, 'id_turma é obrigatório'
+    if id is not None :
+        try :
+            id_aluno = int(id)
+        except (ValueError, TypeError) :
+            return -1, 'Invalid id'
+        cursor.execute('''SELECT nome, cpf FROM aluno WHERE id = ?''', (id_aluno,))
+        row = cursor.fetchone()
+        if not row:
+            return -1, f"Aluno com ID {id_aluno} não encontrado"
+        cpf = row[1]
+    elif cpf is not None :
+        cursor.execute('''SELECT nome, id FROM aluno WHERE cpf = ?''', (cpf,))
+        row = cursor.fetchone()
+        if not row:
+            return -1, f"Aluno com cpf {cpf} não encontrado"
+        id_aluno = row[1]
+    else :
+        return 0, 'Either id or cpf must be provided!'
+    nome_aluno = row[0]
+    cursor.execute('''
+        SELECT COUNT(*) FROM (aluno_turma JOIN turma ON id_turma = turma.id) 
+        JOIN freq ON id_aluno_turma = aluno_turma.id
+        WHERE id_aluno = ? AND id_turma = ?''', (id_aluno, id_turma))
+    n_freqs = cursor.fetchone()[0]
+    if n_freqs == 0 :
+        return 0, f'O aluno {nome_aluno} - {cpf} nao tem registro de frequencia na turma ID {id_turma}'
+    cursor.execute('''
+        SELECT COUNT(*) FROM (aluno_turma JOIN turma ON id_turma = turma.id) 
+        JOIN freq ON id_aluno_turma = aluno_turma.id
+        WHERE id_aluno = ? AND id_turma = ? AND status = 'present' ''', (id_aluno, id_turma))
+    n_aprs = cursor.fetchone()[0]
+    tx_freq = n_aprs / n_freqs
+    return tx_freq, f'O aluno {nome_aluno} - {cpf} tem frequencia {tx_freq} na turma ID {id_turma}'
 
 def taxa_aprovacao (cursor: sqlite3.Cursor, id: int = None, cpf: str = None) :
     if id is not None :
@@ -157,4 +194,3 @@ def delete_aluno (cursor: sqlite3.Cursor, cpf: str) :
         return True, f"Aluno '{nome}' deletado com sucesso"
     except sqlite3.Error as e:
         return False, f"Database error: {e}"
-    
