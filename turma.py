@@ -3,6 +3,7 @@ import horario as H
 import ai_funcs as AI
 import date_funcs
 import materia
+import aluno
 import json
 
 def _create_table_turma (cursor: sqlite3.Cursor) :
@@ -150,7 +151,7 @@ def fill_turmas (cursor: sqlite3.Cursor, mat_period: bool) :
 def finish_turmas (cursor: sqlite3.Cursor) :
     try :
         current_sem = date_funcs.get_current_semester()
-        cursor.execute('''SELECT aluno.nome, aluno.cpf, aluno_turma.notas, aluno_turma.id_turma, aluno_turma.id FROM 
+        cursor.execute('''SELECT aluno.nome, aluno.cpf, aluno_turma.notas, aluno_turma.id_turma, aluno_turma.id, aluno_turma.id_aluno FROM 
             aluno_turma JOIN aluno ON aluno_turma.id_aluno = aluno.id
             JOIN turma ON aluno_turma.id_turma = turma.id 
             WHERE turma.sem = ? AND aluno_turma.status = 'in_progress' ''', (current_sem,))
@@ -169,13 +170,16 @@ def finish_turmas (cursor: sqlite3.Cursor) :
             cpf_aluno = row[1]
             notas_json = row[2]
             id_turma = row[3]
+            id_aluno_turma = row[4]
+            id_aluno = row[5]
             notas = json.loads(notas_json)
             nota_final = float(notas['NF'])
-            if nota_final < 6 :
+            tx_freq, _ = aluno.frequencia(cursor, id=id_aluno, id_turma=id_turma)
+            if nota_final < 6 or tx_freq < 0.75 :
                 new_status = 'reproved'
             else :
                 new_status = 'approved'
-            cursor.execute('''UPDATE aluno_turma SET status = ? WHERE id = ?''', (new_status, row[4],))
+            cursor.execute('''UPDATE aluno_turma SET status = ? WHERE id = ?''', (new_status, id_aluno_turma,))
             return_str += f'Aluno {nome_aluno} - {cpf_aluno} finalizado na turma {id_turma} com status {new_status}\n'
         return_str = return_str.removesuffix('\n')
         return True, return_str if return_str else f'Nenhuma turma em andamento no semestre {current_sem}'
