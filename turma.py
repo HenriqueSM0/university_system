@@ -62,7 +62,16 @@ def create_turma (cursor: sqlite3.Cursor, id_prof: int, local: str, id_mat: int,
     except sqlite3.Error as e:
         return False, f"Database error: {e}" 
 
-def id_turma (cursor: sqlite3.Cursor, id_mat: int = None, mat_name: str = None, id_prof: int = None, hor: str = None) :
+def id_turma (cursor: sqlite3.Cursor, id_mat: int = None, mat_name: str = None, id_prof: int = None, hor: str = None, sem: str = None) :
+    if mat_name is not None and hor is None:
+        obj = H.Horario(mat_name)
+        if obj.array_form:
+            hor = mat_name
+            mat_name = None
+            if id_prof is None and id_mat is not None:
+                id_prof = id_mat
+                id_mat = None
+    id_mat_final = None
     if id_mat is not None :
         try :
             id_mat_final = int(id_mat)
@@ -70,17 +79,47 @@ def id_turma (cursor: sqlite3.Cursor, id_mat: int = None, mat_name: str = None, 
             return False, 'Invalid id'
     elif mat_name is not None :
         id_mat_final = materia.id_materia(cursor, mat_name)
-    else :
-        return None, 'Either id_mat or mat_name must be provided!'
-    if id_mat_final :
-        try: 
-            cursor.execute('SELECT id FROM turma WHERE id_mat = ? AND id_prof = ? AND hor = ?', (id_mat_final, id_prof, hor,))
-            result = cursor.fetchone()  
-            if result: return result[0] 
-            return 0      
-        except sqlite3.Error as e:
-            return False, f"Database error: {e}"
-    return 0          
+        if not id_mat_final:
+            return 0
+    id_prof_final = None
+    if id_prof is not None :
+        try :
+            id_prof_final = int(id_prof)
+        except (ValueError, TypeError) :
+            return False, 'Invalid id'
+    if hor is None :
+        return None, 'hor must be provided!'
+    if id_prof_final is None and id_mat_final is None :
+        return None, 'Either id_prof or id_mat (or mat_name) must be provided!'
+    obj_hor = H.Horario(hor)
+    formated_hor = obj_hor.formated_hor if obj_hor.formated_hor else hor
+    try: 
+        conditions = []
+        params = []
+        if id_prof_final is not None:
+            conditions.append('id_prof = ?')
+            params.append(id_prof_final)
+
+        if id_mat_final is not None:
+            conditions.append('id_mat = ?')
+            params.append(id_mat_final)
+
+        if formated_hor == hor:
+            conditions.append('hor = ?')
+            params.append(hor)
+        else:
+            conditions.append('(hor = ? OR hor = ?)')
+            params.extend([formated_hor, hor])
+        if sem is not None:
+            conditions.append('sem = ?')
+            params.append(sem)
+        where_clause = ' AND '.join(conditions)
+        cursor.execute(f'SELECT id FROM turma WHERE {where_clause}', tuple(params))
+        result = cursor.fetchone()  
+        if result: return result[0] 
+        return 0      
+    except sqlite3.Error as e:
+        return False, f"Database error: {e}"          
 
 def fill_turmas (cursor: sqlite3.Cursor, mat_period: bool) :
     return_str = ''
