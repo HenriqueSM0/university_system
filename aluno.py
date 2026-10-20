@@ -138,16 +138,16 @@ def frequencia (cursor: sqlite3.Cursor, id: int = None, cpf: str = None, id_turm
         return 0, 'Either id or cpf must be provided!'
     nome_aluno = row[0]
     cursor.execute('''
-        SELECT COUNT(*) FROM (aluno_turma JOIN turma ON id_turma = turma.id) 
+        SELECT COUNT(*) FROM aluno_turma 
         JOIN freq ON id_aluno_turma = aluno_turma.id
-        WHERE id_aluno = ? AND id_turma = ?''', (id_aluno, id_turma))
+        WHERE aluno_turma.id_aluno = ? AND aluno_turma.id_turma = ?''', (id_aluno, id_turma))
     n_freqs = cursor.fetchone()[0]
     if n_freqs == 0 :
         return 0, f'O aluno {nome_aluno} - {cpf} nao tem registro de frequencia na turma ID {id_turma}'
     cursor.execute('''
-        SELECT COUNT(*) FROM (aluno_turma JOIN turma ON id_turma = turma.id) 
+        SELECT COUNT(*) FROM aluno_turma 
         JOIN freq ON id_aluno_turma = aluno_turma.id
-        WHERE id_aluno = ? AND id_turma = ? AND status = 'present' ''', (id_aluno, id_turma))
+        WHERE aluno_turma.id_aluno = ? AND aluno_turma.id_turma = ? AND freq.status = 'present' ''', (id_aluno, id_turma))
     n_aprs = cursor.fetchone()[0]
     tx_freq = n_aprs / n_freqs
     return tx_freq, f'O aluno {nome_aluno} - {cpf} tem frequencia {tx_freq} na turma ID {id_turma}'
