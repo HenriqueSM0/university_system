@@ -15,6 +15,7 @@ import aluno_turma
 import matricula
 import date_funcs
 import aluno_turma_cancel_request
+import freq
 
 DB_PATH = 'university.db'
 
@@ -57,6 +58,8 @@ def create_all_tables(cursor: sqlite3.Cursor):
     print('  [✓] matricula')
     aluno_turma_cancel_request._create_table_aluno_turma_cancel_request(cursor)
     print('  [✓] aluno_turma_cancel_request')
+    freq._create_table_freq(cursor)
+    print('  [✓] freq')
 
 
 # ── data ───────────────────────────────────────────────────────────────────────
@@ -284,16 +287,20 @@ def populate_database(cursor: sqlite3.Cursor):
     }
 
     HORARIOS = {
-        96: ['246M12', '35T12', '24M1234'],
-        80: ['24M12', '35T12', '246T1'],
-        64: ['24T12', '35M12', '2M1234'],
+        96: ['246M12', '35T123', '246M34'],
+        80: ['24M12 6M1', '3T12 5T123', '24T12 6T1'],
+        64: ['24T12', '35M12', '35T34'],
     }
 
+    prof_turma_count = {}
     turmas_criadas = []
     for id_mat, id_prof in PROF_MAT.items():
         cursor.execute('SELECT carga_hor FROM materia WHERE id = ?', (id_mat,))
         ch = cursor.fetchone()[0]
-        hor = HORARIOS.get(ch, HORARIOS[80])[0]
+        count = prof_turma_count.get(id_prof, 0)
+        lista_hors = HORARIOS.get(ch, HORARIOS[80])
+        hor = lista_hors[count % len(lista_hors)]
+        prof_turma_count[id_prof] = count + 1
 
         cursor.execute('SELECT nome FROM materia WHERE id = ?', (id_mat,))
         nome_mat = cursor.fetchone()[0]
@@ -302,7 +309,7 @@ def populate_database(cursor: sqlite3.Cursor):
               turma.create_turma(cursor, id_prof, f'Sala {id_mat}01',
                                  id_mat, hor, random.randint(20, 60)))
 
-        id_t = turma.id_turma(cursor, id_mat=id_mat, id_prof=id_prof, hor=hor)
+        id_t = turma.id_turma(cursor, id_prof=id_prof, hor=hor)
         if not isinstance(id_t, tuple) and id_t > 0:
             turmas_criadas.append(id_t)
 
@@ -520,22 +527,36 @@ def populate_database(cursor: sqlite3.Cursor):
     check('finish_turmas (sem todas as NF - deve falhar)',
         turma.finish_turmas(cursor))
 
-    print('\n  Dando NF para todos os aluno_turma em progresso...')
+    print('\n  Dando NF e frequência para todos os aluno_turma em progresso...')
     cursor.execute('''
-        SELECT at.id_aluno, at.id_turma
+        SELECT at.id, at.id_aluno, at.id_turma
         FROM aluno_turma AS at
         JOIN turma AS t ON t.id = at.id_turma
         WHERE at.status = 'in_progress' AND t.sem = ?
     ''', (date_funcs.get_current_semester(),))
     pendentes = cursor.fetchall()
 
-    for id_aluno_p, id_turma_p in pendentes:
+    DIAS_AULA = [f'2026-03-{d:02d}' for d in range(2, 23, 2)] + [f'2026-04-{d:02d}' for d in range(2, 21, 2)]
+
+    for id_at_p, id_aluno_p, id_turma_p in pendentes:
         nf = round(random.uniform(0, 10), 1)
         aluno_turma.set_grade(cursor, id_aluno_p, id_turma_p, 'NF', nf)
 
-    print(f'  [✓] {len(pendentes)} notas finais atribuídas')
+        # Random attendance: 10 to 20 days present out of 20 total days (50% to 100%)
+        # Student needs >= 15 (75%) and NF >= 6 to be approved
+        n_presencas = random.randint(10, len(DIAS_AULA))
+        dias_presentes = set(random.sample(DIAS_AULA, n_presencas))
+        for dia in DIAS_AULA:
+            st = 'present' if dia in dias_presentes else 'absent'
+            cursor.execute('''
+                INSERT INTO freq (id_aluno_turma, day, status)
+                VALUES (?, ?, ?)
+            ''', (id_at_p, dia, st))
 
-    check('finish_turmas (com todas as NF)',
+    print(f'  [✓] {len(pendentes)} notas finais atribuídas')
+    print(f'  [✓] Frequências atribuídas ({len(DIAS_AULA)} aulas por aluno)')
+
+    check('finish_turmas (com todas as NF e frequências)',
         turma.finish_turmas(cursor))
 
     cursor.execute('''
@@ -558,6 +579,14 @@ def populate_database(cursor: sqlite3.Cursor):
         md, msg_md = aluno.media_geral(cursor, id=id_aluno)
         print(f'  [✓] media_geral {nome}: {msg_md}')
 
+        cursor.execute('''
+            SELECT id_turma FROM aluno_turma WHERE id_aluno = ? LIMIT 1
+        ''', (id_aluno,))
+        t_row = cursor.fetchone()
+        if t_row:
+            fq, msg_fq = aluno.frequencia(cursor, id=id_aluno, id_turma=t_row[0])
+            print(f'  [✓] frequencia {nome} (turma {t_row[0]}): {msg_fq}')
+
         tx, msg_tx = aluno.taxa_aprovacao(cursor, id=id_aluno)
         print(f'  [✓] taxa_aprovacao {nome}: {msg_tx}')
 
@@ -565,7 +594,7 @@ def populate_database(cursor: sqlite3.Cursor):
     print('\n-- Estatísticas --')
     for table in ['instituto', 'curso', 'materia', 'professor', 'aluno',
                   'turma', 'turma_reserva', 'aluno_turma', 'matricula',
-                  'mat_curso', 'mat_reqs', 'aluno_turma_cancel_request']:
+                  'mat_curso', 'mat_reqs', 'aluno_turma_cancel_request', 'freq']:
         cursor.execute(f'SELECT COUNT(*) FROM {table}')
         count = cursor.fetchone()[0]
         print(f'  [✓] {table}: {count} registros')
