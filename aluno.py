@@ -181,6 +181,40 @@ def taxa_aprovacao (cursor: sqlite3.Cursor, id: int = None, cpf: str = None) :
     tx_apr = n_apr / n_total
     return tx_apr, f'{nome_aluno} - {cpf} tem taxa de aprovação de {tx_apr}' 
 
+def taxa_integralizacao (cursor: sqlite3.Cursor, id: int = None, cpf: str = None) :
+    if id is not None :
+        try :
+            id_aluno = int(id)
+        except (ValueError, TypeError) :
+            return -1, 'Invalid id'
+        cursor.execute('''SELECT nome, cpf, id_cur FROM aluno WHERE id = ?''', (id_aluno,))
+        row = cursor.fetchone()
+        if not row:
+            return -1, f"Aluno com ID {id_aluno} não encontrado"
+        cpf = row[1]
+    elif cpf is not None :
+        cursor.execute('''SELECT nome, id, id_cur FROM aluno WHERE cpf = ?''', (cpf,))
+        row = cursor.fetchone()
+        if not row:
+            return -1, f"Aluno com cpf {cpf} não encontrado"
+        id_aluno = row[1]
+    else :
+        return 0, 'Either id or cpf must be provided!'
+    nome_aluno = row[0]
+    id_cur = row[2]
+    cursor.execute('''SELECT COUNT(DISTINCT turma.id_mat) 
+        FROM turma JOIN aluno_turma ON aluno_turma.id_turma = turma.id
+        WHERE aluno_turma.id_aluno = ? 
+        AND aluno_turma.status = 'approved' 
+        AND turma.id_mat IN (SELECT id_mat FROM mat_curso WHERE id_cur = ?)''', (id_aluno, id_cur))
+    n_apr = cursor.fetchone()[0]
+    cursor.execute('''SELECT COUNT(*) FROM mat_curso WHERE id_cur = ?''', (id_cur))
+    n_total = cursor.fetchone()[0]
+    if n_total == 0:
+        return -1, f'Curso {id_cur} não tem matérias definidas'
+    tx_apr = n_apr / n_total
+    return tx_apr, f'{nome_aluno} - {cpf} tem taxa de integralizacao de {tx_apr}'
+
 def delete_aluno (cursor: sqlite3.Cursor, cpf: str) :
     if len(cpf) != 11 : 
         return False
