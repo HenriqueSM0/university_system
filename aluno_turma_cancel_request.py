@@ -39,9 +39,6 @@ def cancel_aluno_turma_request (cursor: sqlite3.Cursor, id_aluno: int, id_turma:
         status = row[1]
         if status != 'in_progress' :
             return False, f'O aluno {nome_aluno} - {cpf_aluno} nao esta mais cursando a turma {id_turma}'
-        valid_reason = AI.Ai_funcs().verify_aluno_turma_cancel(reason)
-        if not int(valid_reason) :
-            return False, 'Esta nao e uma razao considerada valida para o cancelamento da disciplina!'
         cursor.execute('''INSERT INTO aluno_turma_cancel_request(id_aluno_turma, result, reason) 
             VALUES (?, 'in_progress', ?)''', (id_aluno_turma, reason,))
         return True, f'Solicitacao de cancelamento em analise - fique atento, entraremos em contato!'

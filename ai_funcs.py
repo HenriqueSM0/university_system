@@ -25,12 +25,3 @@ class Ai_funcs:
             except Exception:
                 return '-1'
         return '-1'
-
-    def verify_aluno_turma_cancel (self, reason: str) :
-        if self.__agent:
-            try:
-                prompt_completo = self.__prompt_aluno_turma_cancel + '\nreason:' + reason
-                return self.__agent.invoke(prompt_completo).content
-            except Exception:
-                return '-1'
-        return '-1'
