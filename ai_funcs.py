@@ -6,7 +6,6 @@ class Ai_funcs:
     def __init__(self):
         try:
             self.__prompt_valid_horario = open('prompts/verify_loc_horario.md', "r", encoding="utf-8").read()
-            self.__prompt_aluno_turma_cancel = open('prompts/verify_aluno_turma_cancel.md', "r", encoding="utf-8").read()
         except Exception:
             self.__prompt_valid_horario = ""
         if ChatGroq:
