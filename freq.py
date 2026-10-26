@@ -61,3 +61,21 @@ def lancar_presenca (cursor: sqlite3.Cursor, id_aluno: int, id_turma: int, statu
             return False, f"Database constraint error: {e}"
     except sqlite3.Error as e:
         return False, f"Database error: {e}"
+
+def id_freq (cursor: sqlite3.Cursor, id_aluno_turma: int = None, day: str = None, id_aluno: int = None, id_turma: int = None) :
+    try :
+        if id_aluno_turma is None and id_aluno is not None and id_turma is not None :
+            cursor.execute('SELECT id FROM aluno_turma WHERE id_aluno = ? AND id_turma = ?', (int(id_aluno), int(id_turma)))
+            row = cursor.fetchone()
+            if not row : return 0
+            id_aluno_turma = row[0]
+        if id_aluno_turma is None or day is None :
+            return None, 'Both id_aluno_turma (or id_aluno + id_turma) and day must be provided!'
+        cursor.execute('SELECT id FROM freq WHERE id_aluno_turma = ? AND day = ?', (int(id_aluno_turma), day))
+        result = cursor.fetchone()
+        if result : return result[0]
+        return 0
+    except (ValueError, TypeError) :
+        return False, 'Invalid id'
+    except sqlite3.Error as e :
+        return False, f"Database error: {e}"

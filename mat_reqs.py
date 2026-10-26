@@ -56,3 +56,26 @@ def create_mat_reqs (cursor: sqlite3.Cursor, id_mat_reqstt: int, id_mat_reqsid: 
             return False, f"Database constraint error: {e}"
     except sqlite3.Error as e:
         return False, f"Database error: {e}"
+
+def id_mat_reqs (cursor: sqlite3.Cursor, id_mat_reqstt: int = None, id_mat_reqsid: int = None, mat_reqstt_name: str = None, mat_reqsid_name: str = None) :
+    try :
+        if id_mat_reqstt is None and mat_reqstt_name is not None :
+            cursor.execute('SELECT id FROM materia WHERE nome = ?', (mat_reqstt_name,))
+            row = cursor.fetchone()
+            if not row : return 0
+            id_mat_reqstt = row[0]
+        if id_mat_reqsid is None and mat_reqsid_name is not None :
+            cursor.execute('SELECT id FROM materia WHERE nome = ?', (mat_reqsid_name,))
+            row = cursor.fetchone()
+            if not row : return 0
+            id_mat_reqsid = row[0]
+        if id_mat_reqstt is None or id_mat_reqsid is None :
+            return None, 'Both id_mat_reqstt and id_mat_reqsid (or their names) must be provided!'
+        cursor.execute('SELECT id FROM mat_reqs WHERE id_mat_reqstt = ? AND id_mat_reqsid = ?', (int(id_mat_reqstt), int(id_mat_reqsid)))
+        result = cursor.fetchone()
+        if result : return result[0]
+        return 0
+    except (ValueError, TypeError) :
+        return False, 'Invalid id'
+    except sqlite3.Error as e :
+        return False, f"Database error: {e}"

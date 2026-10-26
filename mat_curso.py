@@ -52,6 +52,11 @@ def id_materia (cursor: sqlite3.Cursor, id_mat:int, id_cur:int) :
     except sqlite3.Error as e:
         return None, f"Database error: {e}"
 
+def id_mat_curso (cursor: sqlite3.Cursor, id_mat: int = None, id_cur: int = None) :
+    if id_mat is None or id_cur is None :
+        return None, 'Both id_mat and id_cur must be provided!'
+    return id_materia(cursor, id_mat, id_cur)
+
 def delete_mat_curso (cursor: sqlite3.Cursor, id_mat: int, id_cur: int) :
     cursor.execute('''SELECT id FROM mat_curso WHERE id_mat = ? AND id_cur = ?''', (id_mat, id_cur))
     row = cursor.fetchone()

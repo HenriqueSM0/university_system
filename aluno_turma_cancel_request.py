@@ -62,4 +62,26 @@ def cancel_aluno_turma_resolve (cursor: sqlite3.Cursor, id_aluno_turma_cancel: i
         return True, f'Request of aluno_turma_cancel determined as {result_str}'
     except sqlite3.Error as e:
         return False, f"Database error: {e}"
-    
+
+def id_aluno_turma_cancel_request (cursor: sqlite3.Cursor, id_aluno_turma: int = None, id_aluno: int = None, id_turma: int = None, result_status: str = None) :
+    try :
+        if id_aluno_turma is None and id_aluno is not None and id_turma is not None :
+            cursor.execute('SELECT id FROM aluno_turma WHERE id_aluno = ? AND id_turma = ?', (int(id_aluno), int(id_turma)))
+            row = cursor.fetchone()
+            if not row : return 0
+            id_aluno_turma = row[0]
+        if id_aluno_turma is None :
+            return None, 'Either id_aluno_turma or (id_aluno and id_turma) must be provided!'
+        query = 'SELECT id FROM aluno_turma_cancel_request WHERE id_aluno_turma = ?'
+        params = [int(id_aluno_turma)]
+        if result_status is not None :
+            query += ' AND result = ?'
+            params.append(result_status)
+        cursor.execute(query, tuple(params))
+        result = cursor.fetchone()
+        if result : return result[0]
+        return 0
+    except (ValueError, TypeError) :
+        return False, 'Invalid id'
+    except sqlite3.Error as e :
+        return False, f"Database error: {e}"

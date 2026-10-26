@@ -104,6 +104,27 @@ def create_matricula_request (cursor: sqlite3.Cursor, id_aluno: int, id_turma: i
     except sqlite3.Error as e:
         return False, f"Database error: {e}"
 
+def id_matricula (cursor: sqlite3.Cursor, id_aluno: int = None, id_turma: int = None, cpf: str = None, status: str = None) :
+    try :
+        if id_aluno is None and cpf is not None :
+            cursor.execute('SELECT id FROM aluno WHERE cpf = ?', (cpf,))
+            row = cursor.fetchone()
+            if not row : return 0
+            id_aluno = row[0]
+        if id_aluno is None or id_turma is None :
+            return None, 'Both id_aluno (or cpf) and id_turma must be provided!'
+        if status is not None :
+            cursor.execute('SELECT id FROM matricula WHERE id_aluno = ? AND id_turma = ? AND status = ?', (int(id_aluno), int(id_turma), status))
+        else :
+            cursor.execute('SELECT id FROM matricula WHERE id_aluno = ? AND id_turma = ?', (int(id_aluno), int(id_turma)))
+        result = cursor.fetchone()
+        if result : return result[0]
+        return 0
+    except (ValueError, TypeError) :
+        return False, 'Invalid id'
+    except sqlite3.Error as e :
+        return False, f"Database error: {e}"
+
 def delete_matricula_request (cursor: sqlite3.Cursor, id: int = None, id_aluno: int = None, id_turma: int = None) :
     if id is not None :
         try :

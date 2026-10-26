@@ -55,6 +55,19 @@ def create_turma_reseva (cursor: sqlite3.Cursor, id_turma: int, id_cur: int, n_v
     except sqlite3.Error as e:
         return False, f"Database error: {e}"
 
+def id_turma_reserva (cursor: sqlite3.Cursor, id_turma: int = None, id_cur: int = None) :
+    try :
+        if id_turma is None or id_cur is None :
+            return None, 'Both id_turma and id_cur must be provided!'
+        cursor.execute('SELECT id FROM turma_reserva WHERE id_turma = ? AND id_cur = ?', (int(id_turma), int(id_cur)))
+        result = cursor.fetchone()
+        if result : return result[0]
+        return 0
+    except (ValueError, TypeError) :
+        return False, 'Invalid id'
+    except sqlite3.Error as e :
+        return False, f"Database error: {e}"
+
 def delete_turma_reserva (cursor: sqlite3.Cursor, id_turma: int, id_cur: int, sem: str) :
     cursor.execute('''SELECT id FROM turma_reserva WHERE id_turma = ? AND id_cur = ? AND sem = ?''', (id_turma, id_cur, sem))
     row = cursor.fetchone()

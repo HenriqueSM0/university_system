@@ -34,6 +34,34 @@ def create_prof (cursor: sqlite3.Cursor, nome: str, id_inst: int, area: str) :
     except sqlite3.Error as e:
         return False, f"Database error: {e}" 
 
+def id_professor (cursor: sqlite3.Cursor, id: int = None, nome: str = None, id_inst: int = None, area: str = None) :
+    try :
+        if id is not None :
+            try :
+                id_prof = int(id)
+            except (ValueError, TypeError) :
+                return False, 'Invalid id'
+            cursor.execute('SELECT id FROM professor WHERE id = ?', (id_prof,))
+        elif nome is not None :
+            query = 'SELECT id FROM professor WHERE nome = ?'
+            params = [nome]
+            if id_inst is not None :
+                query += ' AND id_inst = ?'
+                params.append(int(id_inst))
+            if area is not None :
+                query += ' AND area = ?'
+                params.append(area)
+            cursor.execute(query, tuple(params))
+        else :
+            return None, 'Either id or nome must be provided!'
+        result = cursor.fetchone()
+        if result : return result[0]
+        return 0
+    except (ValueError, TypeError) :
+        return False, 'Invalid id'
+    except sqlite3.Error as e :
+        return False, f"Database error: {e}"
+
 def delete_professor (cursor: sqlite3.Cursor, id: int) :
     cursor.execute('SELECT nome FROM professor WHERE id = ?', (id,))
     row = cursor.fetchone()
