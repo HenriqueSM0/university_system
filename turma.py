@@ -31,19 +31,23 @@ def create_turma (cursor: sqlite3.Cursor, id_prof: int, local: str, id_mat: int,
         obj_ai = AI.Ai_funcs()
         if not int(obj_ai.valid_local(obj_hor.formated_hor, local)) :
             return False, 'Invalid local'
-        cursor.execute('SELECT id, nome, carga_hor FROM materia WHERE id = ?', (id_mat,))
+        cursor.execute('SELECT id, nome, carga_hor, id_inst FROM materia WHERE id = ?', (id_mat,))
         mat = cursor.fetchone()
         if not mat:
             return False, f"Materia with ID {id_mat} does not exist"
-        cursor.execute('SELECT id, nome FROM professor WHERE id = ?', (id_prof,))
+        cursor.execute('SELECT id, nome, id_inst FROM professor WHERE id = ?', (id_prof,))
         prof = cursor.fetchone()
         if not prof:
             return False, f"Professor with ID {id_prof} does not exist"
         else : 
             sem = date_funcs.get_current_semester()
             nome_prof = prof[1]
+            id_inst_prof = prof[2]
             nome_mat = mat[1]
             ch_materia = mat[2]
+            id_inst_mat = mat[3]
+            if id_inst_prof != id_inst_mat :
+                return False, f'O professor e a materia devem ser do mesmo instituto! (inst_mat - {id_inst_mat}, id_inat_prof - {id_inst_prof})!'
             cursor.execute('SELECT hor FROM turma WHERE id_prof = ? AND sem = ?', (id_prof, sem))
             hors = cursor.fetchall()
             hors_existentes = [line[0] for line in hors]
