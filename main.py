@@ -543,6 +543,7 @@ def main():
             print("10 - Notas e Frequência (Lançamentos e Verificações)")
             print("11 - Cancelamento de Disciplina (Solicitação e Parecer)")
             print("12 - Matriz Curricular e Pré-requisitos")
+            print("13 - AI Chatbot (Assistente Conversacional)")
             print("0  - Sair")
             print("="*50)
 
@@ -572,6 +573,9 @@ def main():
                 menu_cancelamento(cursor, conn)
             elif op == '12':
                 menu_matriz(cursor, conn)
+            elif op == '13':
+                import chatbot
+                chatbot.main()
             elif op == '0':
                 print("\nEncerrando o University System. Até logo!\n")
                 break
